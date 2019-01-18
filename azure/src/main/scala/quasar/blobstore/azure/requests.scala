@@ -16,7 +16,10 @@
 
 package quasar.blobstore.azure
 
-import slamdata.Predef._
+import java.lang.SuppressWarnings
+
+import scala.{Array, Boolean, Option}
+import scala.Predef.String
 
 import cats.data.Kleisli
 import cats.effect.{Async, Sync}

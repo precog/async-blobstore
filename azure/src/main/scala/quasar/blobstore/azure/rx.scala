@@ -16,7 +16,10 @@
 
 package quasar.blobstore.azure
 
-import slamdata.Predef._
+import java.lang.{SuppressWarnings, Throwable}
+
+import scala.{Array, Int, Option, Some, Unit}
+import scala.util.{Either, Left, Right}
 
 import cats.effect._
 import cats.implicits._

@@ -16,9 +16,9 @@
 
 package quasar.blobstore.azure
 
-import slamdata.Predef._
-
 import java.net.URL
+
+import scala.{None, Option, Some, StringContext}
 
 import cats.effect.Sync
 import cats.syntax.functor._

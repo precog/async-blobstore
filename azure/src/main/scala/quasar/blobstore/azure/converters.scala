@@ -16,10 +16,12 @@
 
 package quasar.blobstore.azure
 
-import slamdata.Predef._
 import quasar.blobstore.paths._
 
-import java.lang.Integer
+import java.lang.{Integer, SuppressWarnings}
+
+import scala.{Array, Option, Some}
+import scala.Predef.{genericArrayOps, String}
 
 import cats.Applicative
 import cats.data.Kleisli

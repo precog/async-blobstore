@@ -24,8 +24,7 @@ lazy val core = project
   .settings(
     name := "async-blobstore-core",
     libraryDependencies ++= Seq(
-      "com.slamdata"               %% "slamdata-predef"           % "0.0.4",
-      "com.github.julien-truffaut" %% "monocle-core"              % "1.4.0",
+      "com.github.julien-truffaut" %% "monocle-core" % "1.4.0",
       "co.fs2" %% "fs2-core" % "1.0.0"))
   .enablePlugins(AutomateHeaderPlugin)
 

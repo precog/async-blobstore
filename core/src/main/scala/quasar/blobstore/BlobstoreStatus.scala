@@ -16,7 +16,8 @@
 
 package quasar.blobstore
 
-import slamdata.Predef._
+import scala.Unit
+import scala.Predef.String
 
 import monocle.Prism
 

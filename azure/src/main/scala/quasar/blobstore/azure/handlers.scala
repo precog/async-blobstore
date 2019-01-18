@@ -16,9 +16,11 @@
 
 package quasar.blobstore.azure
 
-import slamdata.Predef._
 import quasar.blobstore.BlobstoreStatus
 
+import java.lang.Throwable
+
+import scala.{Byte, Option}
 import scala.util.control.NonFatal
 
 import cats.ApplicativeError

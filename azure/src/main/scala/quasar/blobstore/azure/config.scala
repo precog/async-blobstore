@@ -16,7 +16,8 @@
 
 package quasar.blobstore.azure
 
-import slamdata.Predef._
+import scala.{Int, Option}
+import scala.Predef.String
 
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._

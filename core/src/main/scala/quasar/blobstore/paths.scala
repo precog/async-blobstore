@@ -16,7 +16,8 @@
 
 package quasar.blobstore
 
-import slamdata.Predef.{List, String}
+import scala.Predef.String
+import scala.collection.immutable.List
 
 object paths {
 

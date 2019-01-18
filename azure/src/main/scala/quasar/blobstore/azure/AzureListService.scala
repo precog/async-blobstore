@@ -16,12 +16,13 @@
 
 package quasar.blobstore.azure
 
-import slamdata.Predef._
 import quasar.blobstore.azure.requests.ListBlobHierarchyArgs
 import quasar.blobstore.paths.PrefixPath
 import quasar.blobstore.services.ListService
 
 import java.lang.Integer
+
+import scala.{None, Some}
 
 import cats.data.Kleisli
 import cats.effect.Async

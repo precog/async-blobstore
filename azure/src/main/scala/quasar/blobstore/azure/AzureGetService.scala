@@ -16,9 +16,10 @@
 
 package quasar.blobstore.azure
 
-import slamdata.Predef._
 import quasar.blobstore.azure.requests.DownloadArgs
 import quasar.blobstore.services.GetService
+
+import scala.Byte
 
 import cats.data.Kleisli
 import cats.effect.ConcurrentEffect
