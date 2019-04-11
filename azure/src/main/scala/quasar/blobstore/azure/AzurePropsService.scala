@@ -20,14 +20,14 @@ import quasar.blobstore.azure.requests.BlobPropsArgs
 import quasar.blobstore.services.PropsService
 
 import cats.data.Kleisli
-import cats.effect.Async
+import cats.effect.{Async, ContextShift}
 import cats.syntax.applicative._
 import com.microsoft.azure.storage.blob.{BlobAccessConditions, BlobURL, ContainerURL}
 import com.microsoft.azure.storage.blob.models.BlobGetPropertiesResponse
 import com.microsoft.rest.v2.Context
 
 object AzurePropsService {
-  def apply[F[_]: Async](
+  def apply[F[_]: Async: ContextShift](
       containerURL: ContainerURL,
       mkArgs: BlobURL => BlobPropsArgs)
       : PropsService[F, BlobGetPropertiesResponse] =
@@ -36,7 +36,7 @@ object AzurePropsService {
       requests.blobPropsRequestK mapF
       handlers.recoverNotFound[F, BlobGetPropertiesResponse]
 
-  def mk[F[_]: Async](containerURL: ContainerURL)
+  def mk[F[_]: Async: ContextShift](containerURL: ContainerURL)
       : PropsService[F, BlobGetPropertiesResponse] =
     AzurePropsService[F](
       containerURL,

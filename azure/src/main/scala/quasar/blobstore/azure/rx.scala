@@ -92,15 +92,16 @@ object rx {
   def enqueueEvent[F[_]: Effect, A](q: Queue[F, A])(event: A): Unit =
     Effect[F].runAsync(q.enqueue1(event))(_ => IO.unit).unsafeRunSync
 
-  def mkAsync[F[_], A](
+  def mkAsync[F[_]: ContextShift, A](
       observer: AsyncObserver[A], f: SingleObserver[A] => Unit)(
       implicit F: Async[F]): F[A] =
-    F.async[A] { cb: (Either[Throwable, A] => Unit) =>
-      observer.setCallback(cb)
-      f(observer)
-    }
+    F.guarantee(
+      F.async[A] { cb: (Either[Throwable, A] => Unit) =>
+        observer.setCallback(cb)
+        f(observer)
+      }) (ContextShift[F].shift)
 
-  def singleToAsync[F[_], A](
+  def singleToAsync[F[_]: ContextShift, A](
       single: Single[A])(
       implicit F: Async[F]): F[A] =
     F.bracket(

@@ -25,12 +25,12 @@ import java.lang.Integer
 import scala.{None, Some}
 
 import cats.data.Kleisli
-import cats.effect.Async
+import cats.effect.{Async, ContextShift}
 import com.microsoft.azure.storage.blob.{ContainerURL, ListBlobsOptions}
 import com.microsoft.rest.v2.Context
 
 object AzureListService {
-  def apply[F[_]: Async](
+  def apply[F[_]: Async: ContextShift](
       toListBlobsOption: Kleisli[F, PrefixPath, ListBlobsOptions],
       mkArgs: ListBlobsOptions => ListBlobHierarchyArgs)
       : ListService[F] =
@@ -40,7 +40,7 @@ object AzureListService {
       converters.toBlobstorePathsK
 
 
-  def mk[F[_]: Async](containerURL: ContainerURL): ListService[F] =
+  def mk[F[_]: Async: ContextShift](containerURL: ContainerURL): ListService[F] =
     AzureListService[F](
       converters.prefixPathToListBlobOptionsK(details = None, maxResults = Some(Integer.valueOf(5000))),
       ListBlobHierarchyArgs(containerURL, None, "/", _, Context.NONE))
