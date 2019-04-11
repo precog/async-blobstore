@@ -22,7 +22,7 @@ import quasar.blobstore.services.GetService
 import scala.Byte
 
 import cats.data.Kleisli
-import cats.effect.ConcurrentEffect
+import cats.effect.{ConcurrentEffect, ContextShift}
 import cats.syntax.applicative._
 import com.microsoft.azure.storage.blob._
 import com.microsoft.rest.v2.Context
@@ -30,7 +30,7 @@ import fs2.Stream
 
 object AzureGetService {
 
-  def apply[F[_]: ConcurrentEffect](
+  def apply[F[_]: ConcurrentEffect: ContextShift](
       containerURL: ContainerURL,
       mkArgs: BlobURL => DownloadArgs,
       reliableDownloadOptions: ReliableDownloadOptions,
@@ -42,7 +42,7 @@ object AzureGetService {
       handlers.toByteStreamK(reliableDownloadOptions, maxQueueSize) mapF
       handlers.recoverNotFound[F, Stream[F, Byte]]
 
-  def mk[F[_]: ConcurrentEffect](containerURL: ContainerURL, maxQueueSize: MaxQueueSize): GetService[F] =
+  def mk[F[_]: ConcurrentEffect: ContextShift](containerURL: ContainerURL, maxQueueSize: MaxQueueSize): GetService[F] =
     AzureGetService(
       containerURL,
       DownloadArgs(_, BlobRange.DEFAULT, BlobAccessConditions.NONE, false, Context.NONE),
