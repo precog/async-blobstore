@@ -42,5 +42,5 @@ lazy val azure = project
       // netty-transport-native-unix-common and netty-transport-native-epoll.
       // Keep nettyVersion in sync with the version that Azure pulls in.
       "io.netty" % "netty-all" % "4.1.38.Final",
-      "io.reactivex.rxjava2" % "rxjava" % "2.2.2"))
+      "io.reactivex.rxjava2" % "rxjava" % "2.2.12"))
   .enablePlugins(AutomateHeaderPlugin)
