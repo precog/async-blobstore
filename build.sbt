@@ -25,7 +25,7 @@ lazy val core = project
     name := "async-blobstore-core",
     libraryDependencies ++= Seq(
       "com.github.julien-truffaut" %% "monocle-core" % "1.6.0",
-      "co.fs2" %% "fs2-core" % "1.0.5"))
+      "co.fs2" %% "fs2-core" % "2.0.0"))
   .enablePlugins(AutomateHeaderPlugin)
 
 lazy val azure = project
