@@ -41,6 +41,6 @@ lazy val azure = project
       // Azure doesn't pull in libs like netty-transport-native-kqueue,
       // netty-transport-native-unix-common and netty-transport-native-epoll.
       // Keep nettyVersion in sync with the version that Azure pulls in.
-      "io.netty" % "netty-all" % "4.1.38.Final",
+      "io.netty" % "netty-all" % "4.1.40.Final",
       "io.reactivex.rxjava2" % "rxjava" % "2.2.2"))
   .enablePlugins(AutomateHeaderPlugin)
