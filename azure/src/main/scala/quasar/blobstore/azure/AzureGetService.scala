@@ -31,10 +31,10 @@ import fs2.Stream
 object AzureGetService {
 
   def apply[F[_]: ConcurrentEffect: ContextShift](
-      containerURL: ContainerURL,
-      mkArgs: BlobURL => DownloadArgs,
-      reliableDownloadOptions: ReliableDownloadOptions,
-      maxQueueSize: MaxQueueSize)
+    containerURL: ContainerURL,
+    mkArgs: BlobURL => DownloadArgs,
+    reliableDownloadOptions: ReliableDownloadOptions,
+    maxQueueSize: MaxQueueSize)
       : GetService[F] =
     converters.blobPathToBlobURLK(containerURL) andThen
       Kleisli[F, BlobURL, DownloadArgs](mkArgs(_).pure[F]) andThen
@@ -42,7 +42,8 @@ object AzureGetService {
       handlers.toByteStreamK(reliableDownloadOptions, maxQueueSize) mapF
       handlers.recoverNotFound[F, Stream[F, Byte]]
 
-  def mk[F[_]: ConcurrentEffect: ContextShift](containerURL: ContainerURL, maxQueueSize: MaxQueueSize): GetService[F] =
+  def mk[F[_]: ConcurrentEffect: ContextShift](containerURL: ContainerURL, maxQueueSize: MaxQueueSize)
+      : GetService[F] =
     AzureGetService(
       containerURL,
       DownloadArgs(_, BlobRange.DEFAULT, BlobAccessConditions.NONE, false, Context.NONE),

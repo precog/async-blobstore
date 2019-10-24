@@ -18,7 +18,7 @@ package quasar.blobstore
 
 import quasar.blobstore.paths.{BlobPath, BlobstorePath, PrefixPath}
 
-import scala.{Byte, Option}
+import scala.{Byte, Option, Unit, Int}
 
 import cats.data.Kleisli
 import fs2.Stream
@@ -32,5 +32,7 @@ object services {
   type PropsService[F[_], P] = Kleisli[F, BlobPath, Option[P]]
 
   type ListService[F[_]] = Kleisli[F, PrefixPath, Option[Stream[F, BlobstorePath]]]
+
+  type PutService[F[_]] = Kleisli[F, (BlobPath, Stream[F, Byte]), Int]
 
 }
