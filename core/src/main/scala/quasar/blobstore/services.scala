@@ -18,7 +18,7 @@ package quasar.blobstore
 
 import quasar.blobstore.paths.{BlobPath, BlobstorePath, PrefixPath}
 
-import scala.{Byte, Option, Unit, Int}
+import scala.{Byte, Option, Int}
 
 import cats.data.Kleisli
 import fs2.Stream
