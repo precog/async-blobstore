@@ -27,6 +27,7 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
 import fs2.{RaiseThrowable, Stream}
 import fs2.concurrent.Queue
+import fs2.interop.reactivestreams._
 import io.reactivex.{Flowable, Single, SingleObserver}
 import io.reactivex.observers.DisposableSingleObserver
 import io.reactivex.subscribers.DefaultSubscriber
@@ -68,6 +69,9 @@ object rx {
       if (callback != null) callback(Left(t))
       else ()
   }
+
+  def streamToFlowable[F[_]: ConcurrentEffect, A](s: Stream[F, A]): Flowable[A] =
+    Flowable.fromPublisher(s.toUnicastPublisher)
 
   def flowableToStream[F[_]: ConcurrentEffect: RaiseThrowable, A](
       f: Flowable[A],
