@@ -37,6 +37,7 @@ lazy val azure = project
     name := "async-blobstore-azure",
     libraryDependencies ++= Seq(
       "com.microsoft.azure" % "azure-storage-blob" % "10.5.0",
+      "com.azure" % "azure-identity" % "1.0.0",
       "eu.timepit" %% "refined" % "0.9.9",
       // netty-all isn't strictly necessary but takes advantage of native libs.
       // Azure doesn't pull in libs like netty-transport-native-kqueue,

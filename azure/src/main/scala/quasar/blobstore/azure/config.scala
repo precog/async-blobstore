@@ -16,7 +16,7 @@
 
 package quasar.blobstore.azure
 
-import scala.{Int, Option}
+import scala.{Int, Option, Product, Serializable}
 import scala.Predef.String
 
 import eu.timepit.refined.api.Refined
@@ -29,7 +29,22 @@ final case class StorageUrl(value: String)
 final case class AccountName(value: String)
 final case class AccountKey(value: String)
 
-final case class AzureCredentials(accountName: AccountName, accountKey: AccountKey)
+final case class ClientId(value: String)
+final case class ClientSecret(value: String)
+final case class TenantId(value: String)
+
+sealed trait AzureCredentials extends Product with Serializable
+
+object AzureCredentials {
+  final case class SharedKey(
+    accountName: AccountName,
+    accountKey: AccountKey) extends AzureCredentials
+
+  final case class ActiveDirectory(
+    clientId: ClientId,
+    tenantId: TenantId,
+    clientSecret: ClientSecret) extends AzureCredentials
+}
 
 final case class MaxQueueSize(value: Int Refined Positive)
 
