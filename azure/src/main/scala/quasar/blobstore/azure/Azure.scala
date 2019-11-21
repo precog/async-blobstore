@@ -19,7 +19,6 @@ package quasar.blobstore.azure
 import java.net.URL
 
 import scala._
-import scala.Predef._
 import collection.JavaConverters._
 
 import cats.implicits._
@@ -44,14 +43,12 @@ object Azure {
 
       case Some(AzureCredentials.ActiveDirectory(clientId, tenantId, clientSecret)) =>
         rx.publisherToStream[F, AccessToken](
-            (new ClientSecretCredentialBuilder())
-              .clientId(clientId.value)
-              .tenantId(tenantId.value)
-              .clientSecret(clientSecret.value)
-              .build()
-              .getToken((new TokenRequestContext()).setScopes(
-                List("https://storage.azure.com/.default").asJava)))
-          .evalTap(tk => ConcurrentEffect[F].delay(println(tk.getExpiresAt())))
+          (new ClientSecretCredentialBuilder())
+            .clientId(clientId.value)
+            .tenantId(tenantId.value)
+            .clientSecret(clientSecret.value)
+            .build()
+            .getToken((new TokenRequestContext()).setScopes(List("https://storage.azure.com/.default").asJava)))
           .compile
           .lastOrError
           .map(tk => new TokenCredentials(tk.getToken))
