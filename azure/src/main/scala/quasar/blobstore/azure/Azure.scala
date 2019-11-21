@@ -19,6 +19,7 @@ package quasar.blobstore.azure
 import java.net.URL
 
 import scala._
+import collection.JavaConverters._
 
 import cats.implicits._
 import cats.effect.ConcurrentEffect
@@ -47,7 +48,7 @@ object Azure {
             .tenantId(tenantId.value)
             .clientSecret(clientSecret.value)
             .build()
-            .getToken(new TokenRequestContext()))
+            .getToken((new TokenRequestContext()).setScopes(List("https://storage.azure.com/user_impersonation").asJava)))
           .compile
           .lastOrError
           .map(tk => new TokenCredentials(tk.getToken))
