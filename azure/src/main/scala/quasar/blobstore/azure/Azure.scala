@@ -48,7 +48,7 @@ object Azure {
             .tenantId(tenantId.value)
             .clientSecret(clientSecret.value)
             .build()
-            .getToken((new TokenRequestContext()).setScopes(List("https://storage.azure.com/user_impersonation").asJava)))
+            .getToken((new TokenRequestContext()).setScopes(List("https://storage.azure.com/.default").asJava)))
           .compile
           .lastOrError
           .map(tk => new TokenCredentials(tk.getToken))
