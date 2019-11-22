@@ -19,6 +19,10 @@ package quasar.blobstore.azure
 import scala.{Int, Option, Product, Serializable}
 import scala.Predef.String
 
+import java.time.OffsetDateTime
+
+import cats._
+
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.numeric.Positive
@@ -50,6 +54,18 @@ final case class MaxQueueSize(value: Int Refined Positive)
 
 object MaxQueueSize {
   def default: MaxQueueSize = MaxQueueSize(10)
+}
+
+final case class Expires[+A](value: A, expiresAt: OffsetDateTime)
+
+object Expires {
+  def never[A](value: A): Expires[A] =
+    Expires(value, OffsetDateTime.MAX)
+
+  implicit def expiresFunctor: Functor[Expires] = new Functor[Expires] {
+    def map[A, B](fa: Expires[A])(f: A => B): Expires[B] =
+      Expires(f(fa.value), fa.expiresAt)
+  }
 }
 
 trait Config {

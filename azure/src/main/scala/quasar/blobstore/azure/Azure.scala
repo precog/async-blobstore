@@ -21,6 +21,7 @@ import java.net.URL
 import scala._
 import collection.JavaConverters._
 
+import cats._
 import cats.implicits._
 import cats.effect.ConcurrentEffect
 
@@ -33,28 +34,31 @@ object Azure {
   def mkStdStorageUrl(name: AccountName): StorageUrl =
     StorageUrl(s"https://${name.value}.blob.core.windows.net/")
 
-  def mkCredentials[F[_]: ConcurrentEffect](cred: Option[AzureCredentials]): F[ICredentials] =
+  def mkCredentials[F[_]: ConcurrentEffect](cred: Option[AzureCredentials]): F[Expires[ICredentials]] =
     cred match {
       case None =>
-        (new AnonymousCredentials(): ICredentials).pure[F]
+        Expires.never(
+          new AnonymousCredentials: ICredentials).pure[F]
 
       case Some(AzureCredentials.SharedKey(accountName, accountKey)) =>
-        (new SharedKeyCredentials(accountName.value, accountKey.value): ICredentials).pure[F]
+        Expires.never(
+          new SharedKeyCredentials(accountName.value, accountKey.value): ICredentials).pure[F]
 
       case Some(AzureCredentials.ActiveDirectory(clientId, tenantId, clientSecret)) =>
         rx.publisherToStream[F, AccessToken](
-          (new ClientSecretCredentialBuilder())
+          (new ClientSecretCredentialBuilder)
             .clientId(clientId.value)
             .tenantId(tenantId.value)
             .clientSecret(clientSecret.value)
             .build()
-            .getToken((new TokenRequestContext()).setScopes(List("https://storage.azure.com/.default").asJava)))
+            .getToken((new TokenRequestContext)
+              .setScopes(List("https://storage.azure.com/.default").asJava)))
           .compile
           .lastOrError
-          .map(tk => new TokenCredentials(tk.getToken))
+          .map(tk => Expires(new TokenCredentials(tk.getToken), tk.getExpiresAt))
     }
 
-  def mkContainerUrl[F[_]](cfg: Config)(implicit F: ConcurrentEffect[F]): F[ContainerURL] =
+  def mkContainerUrl[F[_]](cfg: Config)(implicit F: ConcurrentEffect[F]): F[Expires[ContainerURL]] =
     F.catchNonFatal(new URL(cfg.storageUrl.value)) flatMap { url =>
       // Azure SDK changed its logging behavior in 10.3.0 (compared to 10.2.0).
       // In 10.2.0 the standard `new PipelineOptions` could be used, but in 10.3.0
@@ -67,14 +71,12 @@ object Azure {
       // - `com.microsoft.azure.storage.blob.LoggingFactory`
       // - `Azure Storage Java SDK`
 
-      mkCredentials(cfg.credentials)
-        .map(creds =>
-          new ServiceURL(
-            url,
-            StorageURL.createPipeline(
-              creds,
-              new PipelineOptions().withLoggingOptions(
-                new LoggingOptions(3000, true)))))
-        .map(_.createContainerURL(cfg.containerName.value))
+      Functor[F].compose[Expires].map(mkCredentials(cfg.credentials)) { creds =>
+        val pipeline =
+          StorageURL.createPipeline(
+            creds, new PipelineOptions().withLoggingOptions(new LoggingOptions(3000, true)))
+
+        new ServiceURL(url, pipeline).createContainerURL(cfg.containerName.value)
+      }
     }
 }
