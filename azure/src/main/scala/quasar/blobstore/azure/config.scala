@@ -56,7 +56,7 @@ object MaxQueueSize {
   def default: MaxQueueSize = MaxQueueSize(10)
 }
 
-final case class Expires[+A](value: A, expiresAt: OffsetDateTime)
+final case class Expires[A](value: A, expiresAt: OffsetDateTime)
 
 object Expires {
   def never[A](value: A): Expires[A] =
