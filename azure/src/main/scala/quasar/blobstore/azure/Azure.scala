@@ -17,19 +17,25 @@
 package quasar.blobstore.azure
 
 import java.net.URL
+import java.time.Instant
 
 import scala._
+import scala.Predef._
+import scala.concurrent.duration.MILLISECONDS
 import collection.JavaConverters._
 
 import cats._
 import cats.implicits._
-import cats.effect.ConcurrentEffect
+import cats.effect.{ConcurrentEffect, Sync, Timer}
+import cats.effect.concurrent.Ref
 
 import com.microsoft.azure.storage.blob._
 import com.azure.identity.ClientSecretCredentialBuilder
 import com.azure.core.credential.{AccessToken, TokenRequestContext}
 
-object Azure {
+import org.slf4s.Logging
+
+object Azure extends Logging {
 
   def mkStdStorageUrl(name: AccountName): StorageUrl =
     StorageUrl(s"https://${name.value}.blob.core.windows.net/")
@@ -79,4 +85,30 @@ object Azure {
         new ServiceURL(url, pipeline).createContainerURL(cfg.containerName.value)
       }
     }
+
+  def refContainerUrl[F[_]: ConcurrentEffect: Timer](cfg: Config)
+      : F[(Ref[F, Expires[ContainerURL]], F[Unit])] =
+    for {
+      containerUrl <- mkContainerUrl(cfg)
+      ref <- Ref.of[F, Expires[ContainerURL]](containerUrl)
+      refresh = for {
+        epochNow <- Timer[F].clock.realTime(MILLISECONDS)
+        now = Instant.ofEpochMilli(epochNow)
+        expiresAt <- ref.get.map(_.expiresAt)
+
+        _ <- debug(s"Credentials expire on: ${expiresAt}")
+
+        refresh = mkContainerUrl(cfg).flatMap(ref.set(_))
+
+        _ <-
+          if (now.isAfter(expiresAt.toInstant))
+            debug("Credentials expired, renewing...") *> refresh *> debug("Renewed credentials")
+          else
+            debug("Credentials are still valid.")
+        } yield ()
+    } yield (ref, refresh)
+
+
+  private def debug[F[_]: Sync](str: String): F[Unit] =
+    Sync[F].delay(log.debug(str))
 }
