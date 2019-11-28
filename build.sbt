@@ -39,7 +39,7 @@ lazy val azure = project
       "org.slf4s" %% "slf4s-api" % "1.7.25",
       "com.microsoft.azure" % "azure-storage-blob" % "10.5.0",
       "com.azure" % "azure-identity" % "1.0.0",
-      "eu.timepit" %% "refined" % "0.9.9",
+      "eu.timepit" %% "refined" % "0.9.10",
       // netty-all isn't strictly necessary but takes advantage of native libs.
       // Azure doesn't pull in libs like netty-transport-native-kqueue,
       // netty-transport-native-unix-common and netty-transport-native-epoll.
