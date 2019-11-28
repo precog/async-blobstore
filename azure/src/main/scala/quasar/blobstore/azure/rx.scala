@@ -27,9 +27,11 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
 import fs2.{RaiseThrowable, Stream}
 import fs2.concurrent.Queue
+import fs2.interop.reactivestreams._
 import io.reactivex.{Flowable, Single, SingleObserver}
 import io.reactivex.observers.DisposableSingleObserver
 import io.reactivex.subscribers.DefaultSubscriber
+import org.reactivestreams.Publisher
 
 object rx {
   final class AsyncSubscriber[F[_]: Sync, A](cb: Either[Throwable, Option[F[A]]] => Unit) extends DefaultSubscriber[A] {
@@ -69,10 +71,17 @@ object rx {
       else ()
   }
 
+  def streamToFlowable[F[_]: ConcurrentEffect, A](s: Stream[F, A]): Flowable[A] =
+    Flowable.fromPublisher(s.toUnicastPublisher)
+
   def flowableToStream[F[_]: ConcurrentEffect: RaiseThrowable, A](
       f: Flowable[A],
       maxQueueSize: Int Refined Positive): Stream[F, A] =
     handlerToStream(flowableToHandler(f), maxQueueSize)
+
+  def publisherToStream[F[_]: ConcurrentEffect, A](
+    p: Publisher[A]): Stream[F, A] =
+    fromPublisher(p)
 
   def flowableToHandler[F[_]: Sync, A](flowable: Flowable[A]): (Either[Throwable, Option[F[A]]] => Unit) => F[Unit] = { cb =>
     val sub = new AsyncSubscriber[F, A](cb)

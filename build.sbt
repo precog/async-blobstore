@@ -25,7 +25,8 @@ lazy val core = project
     name := "async-blobstore-core",
     libraryDependencies ++= Seq(
       "com.github.julien-truffaut" %% "monocle-core" % "1.6.0",
-      "co.fs2" %% "fs2-core" % "1.0.5"))
+      "co.fs2" %% "fs2-core" % "1.0.5",
+      "co.fs2" %% "fs2-reactive-streams" % "1.0.5"))
   .enablePlugins(AutomateHeaderPlugin)
 
 lazy val azure = project
@@ -35,8 +36,10 @@ lazy val azure = project
   .settings(
     name := "async-blobstore-azure",
     libraryDependencies ++= Seq(
+      "org.slf4s" %% "slf4s-api" % "1.7.25",
       "com.microsoft.azure" % "azure-storage-blob" % "10.5.0",
-      "eu.timepit" %% "refined" % "0.9.10",
+      "com.azure" % "azure-identity" % "1.0.0",
+      "eu.timepit" %% "refined" % "0.9.9",
       // netty-all isn't strictly necessary but takes advantage of native libs.
       // Azure doesn't pull in libs like netty-transport-native-kqueue,
       // netty-transport-native-unix-common and netty-transport-native-epoll.
