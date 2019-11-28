@@ -70,6 +70,7 @@ object Azure extends Logging {
       // In 10.2.0 the standard `new PipelineOptions` could be used, but in 10.3.0
       // this results in messages being logged to console in eg quasar's repl
       // (despite having no console logger configured).
+      // Still not having a full understanding of how this logging is supposed to work
       // exactly (e.g. `withLogger`) but adding `LoggingOptions` with
       // `disableDefaultLogging = true` seems to be fixing it.
       // As an aside, in case we need to look at this in the future,
