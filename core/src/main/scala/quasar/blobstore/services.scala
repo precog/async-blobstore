@@ -25,14 +25,16 @@ import fs2.Stream
 
 object services {
 
-  type StatusService[F[_]] = F[BlobstoreStatus]
+  type DeleteService[F[_]] = Kleisli[F, BlobPath, Int]
 
   type GetService[F[_]] = Kleisli[F, BlobPath, Option[Stream[F, Byte]]]
 
-  type PropsService[F[_], P] = Kleisli[F, BlobPath, Option[P]]
-
   type ListService[F[_]] = Kleisli[F, PrefixPath, Option[Stream[F, BlobstorePath]]]
 
+  type PropsService[F[_], P] = Kleisli[F, BlobPath, Option[P]]
+
   type PutService[F[_]] = Kleisli[F, (BlobPath, Stream[F, Byte]), Int]
+
+  type StatusService[F[_]] = F[BlobstoreStatus]
 
 }
