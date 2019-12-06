@@ -16,23 +16,31 @@
 
 package quasar.blobstore.azure
 
+import scala.StringContext
+
+import quasar.blobstore.BlobstoreStatus
 import quasar.blobstore.services.DeleteService
 
 import com.microsoft.azure.storage.blob.ContainerURL
 
 import cats.data.Kleisli
-import cats.effect.{ContextShift, ConcurrentEffect}
+import cats.effect.{Async, ContextShift}
 
 object AzureDeleteService {
-  def apply[F[_]: ContextShift: ConcurrentEffect](containerURL: ContainerURL)
+  def apply[F[_]: Async: ContextShift](containerURL: ContainerURL)
       : DeleteService[F] =
     for {
       blobPath <- Kleisli.ask
       blobUrl <- Kleisli.liftF(converters.mkBlobUrl(containerURL)(blobPath))
       response <- Kleisli.liftF(rx.singleToAsync(blobUrl.delete()))
-    } yield response.statusCode
+    } yield response.statusCode match {
+      case 202 => BlobstoreStatus.ok()
+      case 403 => BlobstoreStatus.noAccess()
+      case 404 => BlobstoreStatus.notFound()
+      case other => BlobstoreStatus.notOk(s"Azure returned status $other")
+    }
 
-  def mk[F[_]: ContextShift: ConcurrentEffect](containerURL: ContainerURL)
+  def mk[F[_]: Async: ContextShift](containerURL: ContainerURL)
       : DeleteService[F] =
     apply[F](containerURL)
 }

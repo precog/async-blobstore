@@ -25,7 +25,7 @@ import fs2.Stream
 
 object services {
 
-  type DeleteService[F[_]] = Kleisli[F, BlobPath, Int]
+  type DeleteService[F[_]] = Kleisli[F, BlobPath, BlobstoreStatus]
 
   type GetService[F[_]] = Kleisli[F, BlobPath, Option[Stream[F, Byte]]]
 
