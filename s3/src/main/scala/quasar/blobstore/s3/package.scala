@@ -25,8 +25,3 @@ final case class SecretKey(value: String)
 final case class Region(value: String)
 
 final case class ObjectKey(value: String)
-
-final case class S3Credentials(accessKey: AccessKey, secretKey: SecretKey, region: Region)
-
-final case class S3Config(bucket: Bucket, credentials: S3Credentials)
-
