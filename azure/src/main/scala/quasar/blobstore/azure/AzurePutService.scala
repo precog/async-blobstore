@@ -19,6 +19,7 @@ package quasar.blobstore.azure
 import scala._
 
 import quasar.blobstore.azure.requests.UploadRequestArgs
+import quasar.blobstore.paths.BlobPath
 import quasar.blobstore.services.PutService
 
 import com.microsoft.azure.storage.blob._
@@ -27,6 +28,7 @@ import java.nio.ByteBuffer
 
 import cats.effect.{ContextShift, ConcurrentEffect}
 import cats.data.Kleisli
+import fs2.Stream
 
 object AzurePutService {
   private val ChunkLength = 10 * 1024 * 1024
@@ -39,7 +41,7 @@ object AzurePutService {
     transferOptions: TransferManagerUploadToBlockBlobOptions)
       : PutService[F] =
     for {
-      (blobPath, st) <- Kleisli.ask
+      (blobPath, st) <- Kleisli.ask[F, (BlobPath, Stream[F, Byte])]
       url <- Kleisli.liftF(converters.mkBlobUrl(containerURL)(blobPath))
       blockURL = url.toBlockBlobURL
       flowable = rx.streamToFlowable[F, ByteBuffer](st.chunks.map(_.toByteBuffer))
