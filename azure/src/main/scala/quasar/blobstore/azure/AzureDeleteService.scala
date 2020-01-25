@@ -19,6 +19,7 @@ package quasar.blobstore.azure
 import scala.StringContext
 
 import quasar.blobstore.BlobstoreStatus
+import quasar.blobstore.paths.BlobPath
 import quasar.blobstore.services.DeleteService
 
 import com.microsoft.azure.storage.blob.ContainerURL
@@ -30,7 +31,7 @@ object AzureDeleteService {
   def apply[F[_]: Async: ContextShift](containerURL: ContainerURL)
       : DeleteService[F] =
     for {
-      blobPath <- Kleisli.ask
+      blobPath <- Kleisli.ask[F, BlobPath]
       blobUrl <- Kleisli.liftF(converters.mkBlobUrl(containerURL)(blobPath))
       response <- Kleisli.liftF(rx.singleToAsync(blobUrl.delete()))
     } yield response.statusCode match {
