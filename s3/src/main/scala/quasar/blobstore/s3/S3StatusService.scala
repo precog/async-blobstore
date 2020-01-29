@@ -16,46 +16,24 @@
 
 package quasar.blobstore.s3
 
-import scala._
+import quasar.blobstore.services.StatusService
 
-import quasar.blobstore.paths.BlobPath
-import quasar.blobstore.services.DeleteService
-
-import cats.data.Kleisli
-import cats.effect.{ContextShift, Concurrent}
 import cats.effect.syntax.bracket._
+import cats.effect.{ContextShift, Concurrent}
 import cats.implicits._
 
 import monix.catnap.syntax._
 
 import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.services.s3.model.{
-  DeleteObjectResponse,
-  DeleteObjectRequest
-}
+import software.amazon.awssdk.services.s3.model.HeadBucketRequest
 
-object S3DeleteService {
+object S3StatusService {
   def apply[F[_]: Concurrent: ContextShift](
     client: S3AsyncClient,
-    bucket: Bucket): DeleteService[F] =
-    for {
-      blobPath <- Kleisli.ask[F, BlobPath]
-      objectKey = ObjectKey(blobPath.path.map(_.value).intercalate("/"))
-      response <- Kleisli.liftF(deleteObject(client, bucket, objectKey))
-      sdkResponse = response.sdkHttpResponse
-    } yield converters.responseToStatus(sdkResponse)
-
-  private def deleteObject[F[_]: Concurrent: ContextShift](
-    client: S3AsyncClient,
-    bucket: Bucket,
-    key: ObjectKey): F[DeleteObjectResponse] =
+    bucket: Bucket): StatusService[F] =
     Concurrent[F].delay(
-      client.deleteObject(
-        DeleteObjectRequest
-          .builder
-          .bucket(bucket.value)
-          .key(key.value)
-          .build))
+      client.headBucket(HeadBucketRequest.builder.bucket(bucket.value).build))
       .futureLift
       .guarantee(ContextShift[F].shift)
+      .map(r => converters.responseToStatus(r.sdkHttpResponse))
 }
