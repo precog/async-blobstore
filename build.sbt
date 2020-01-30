@@ -11,7 +11,7 @@ scmInfo in ThisBuild := Some(ScmInfo(
 val ArgonautVersion = "6.2.3"
 val AwsSdkVersion = "2.9.1"
 val AwsV1SdkVersion = "1.11.634"
-val Fs2Version = "1.0.5"
+val Fs2Version = "2.2.1"
 val MonixVersion = "3.0.0"
 
 // Include to also publish a project's tests
@@ -31,8 +31,8 @@ lazy val core = project
     name := "async-blobstore-core",
     libraryDependencies ++= Seq(
       "com.github.julien-truffaut" %% "monocle-core" % "1.6.0",
-      "co.fs2" %% "fs2-core" % "2.2.1",
-      "co.fs2" %% "fs2-reactive-streams" % "2.2.1"))
+      "co.fs2" %% "fs2-core" % Fs2Version,
+      "co.fs2" %% "fs2-reactive-streams" % Fs2Version))
   .enablePlugins(AutomateHeaderPlugin)
 
 lazy val s3 = project
