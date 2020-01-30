@@ -9,7 +9,7 @@ scmInfo in ThisBuild := Some(ScmInfo(
   "scm:git@github.com:slamdata/async-blobstore.git"))
 
 val AwsSdkVersion = "2.9.1"
-val Fs2Version = "2.2.1"
+val Fs2Version = "2.2.2"
 val MonixVersion = "3.0.0"
 
 // Include to also publish a project's tests
