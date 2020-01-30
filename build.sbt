@@ -10,7 +10,7 @@ scmInfo in ThisBuild := Some(ScmInfo(
 
 val AwsSdkVersion = "2.9.1"
 val Fs2Version = "2.2.1"
-val MonixVersion = "3.0.0"
+val MonixVersion = "3.1.0"
 
 // Include to also publish a project's tests
 lazy val publishTestsSettings = Seq(
