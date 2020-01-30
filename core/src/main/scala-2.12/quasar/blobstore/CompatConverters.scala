@@ -16,20 +16,8 @@
 
 package quasar.blobstore
 
-import scala.Predef.String
-import scala.collection.immutable.List
+import scala.collection.JavaConverters
 
-object paths {
-
-  final case class PathElem(value: String)
-
-  type Path = List[PathElem]
-
-
-  trait BlobstorePath {
-    def path: Path
-  }
-
-  final case class PrefixPath(path: Path) extends BlobstorePath
-  final case class BlobPath(path: Path) extends BlobstorePath
+private[blobstore] object CompatConverters {
+  val All = JavaConverters
 }
