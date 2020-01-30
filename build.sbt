@@ -8,9 +8,7 @@ scmInfo in ThisBuild := Some(ScmInfo(
   url("https://github.com/slamdata/async-blobstore"),
   "scm:git@github.com:slamdata/async-blobstore.git"))
 
-val ArgonautVersion = "6.2.3"
 val AwsSdkVersion = "2.9.1"
-val AwsV1SdkVersion = "1.11.634"
 val Fs2Version = "2.2.1"
 val MonixVersion = "3.0.0"
 
@@ -42,15 +40,10 @@ lazy val s3 = project
   .settings(
     name := "async-blobstore-s3",
     libraryDependencies ++= Seq(
-      "io.argonaut"  %% "argonaut" % ArgonautVersion,
       "co.fs2" %% "fs2-core" % Fs2Version,
       "io.monix" %% "monix-catnap" % MonixVersion,
       "software.amazon.awssdk" % "netty-nio-client" % AwsSdkVersion,
-      // We depend on both v1 and v2 S3 SDKs because of this ticket:
-      // https://github.com/aws/aws-sdk-java-v2/issues/272
-      // Depending on both is the recommended workaround
-      "software.amazon.awssdk" % "s3" % AwsSdkVersion,
-      "com.amazonaws" % "aws-java-sdk-s3" % AwsV1SdkVersion))
+      "software.amazon.awssdk" % "s3" % AwsSdkVersion))
   .enablePlugins(AutomateHeaderPlugin)
 
 lazy val azure = project
@@ -64,9 +57,5 @@ lazy val azure = project
       "com.microsoft.azure" % "azure-storage-blob" % "10.5.0",
       "com.azure" % "azure-identity" % "1.0.0",
       "eu.timepit" %% "refined" % "0.9.9",
-      // netty-all isn't strictly necessary but takes advantage of native libs.
-      // Azure doesn't pull in libs like netty-transport-native-kqueue,
-      // netty-transport-native-unix-common and netty-transport-native-epoll.
-      // Keep nettyVersion in sync with the version that Azure pulls in.
       "io.reactivex.rxjava2" % "rxjava" % "2.2.2"))
   .enablePlugins(AutomateHeaderPlugin)
