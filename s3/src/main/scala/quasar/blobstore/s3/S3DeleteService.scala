@@ -16,8 +16,7 @@
 
 package quasar.blobstore.s3
 
-import scala._
-
+import quasar.blobstore.BlobstoreStatus
 import quasar.blobstore.paths.BlobPath
 import quasar.blobstore.services.DeleteService
 
@@ -29,10 +28,7 @@ import cats.implicits._
 import monix.catnap.syntax._
 
 import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.services.s3.model.{
-  DeleteObjectResponse,
-  DeleteObjectRequest
-}
+import software.amazon.awssdk.services.s3.model.{DeleteObjectRequest, S3Exception}
 
 object S3DeleteService {
   def apply[F[_]: Concurrent: ContextShift](
@@ -42,13 +38,12 @@ object S3DeleteService {
       blobPath <- Kleisli.ask[F, BlobPath]
       objectKey = ObjectKey(blobPath.path.map(_.value).intercalate("/"))
       response <- Kleisli.liftF(deleteObject(client, bucket, objectKey))
-      sdkResponse = response.sdkHttpResponse
-    } yield converters.responseToStatus(sdkResponse)
+    } yield response
 
   private def deleteObject[F[_]: Concurrent: ContextShift](
     client: S3AsyncClient,
     bucket: Bucket,
-    key: ObjectKey): F[DeleteObjectResponse] =
+    key: ObjectKey): F[BlobstoreStatus] =
     Concurrent[F].delay(
       client.deleteObject(
         DeleteObjectRequest
@@ -58,4 +53,8 @@ object S3DeleteService {
           .build))
       .futureLift
       .guarantee(ContextShift[F].shift)
+      .as(BlobstoreStatus.ok()) recover {
+        case (e: S3Exception) if e.statusCode === 403 =>
+          BlobstoreStatus.noAccess()
+      }
 }

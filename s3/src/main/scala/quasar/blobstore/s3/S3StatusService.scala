@@ -16,6 +16,9 @@
 
 package quasar.blobstore.s3
 
+import scala.StringContext
+
+import quasar.blobstore.BlobstoreStatus
 import quasar.blobstore.services.StatusService
 
 import cats.effect.syntax.bracket._
@@ -25,7 +28,11 @@ import cats.implicits._
 import monix.catnap.syntax._
 
 import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.services.s3.model.HeadBucketRequest
+import software.amazon.awssdk.services.s3.model.{
+  HeadBucketRequest,
+  NoSuchBucketException,
+  S3Exception
+}
 
 object S3StatusService {
   def apply[F[_]: Concurrent: ContextShift](
@@ -35,5 +42,12 @@ object S3StatusService {
       client.headBucket(HeadBucketRequest.builder.bucket(bucket.value).build))
       .futureLift
       .guarantee(ContextShift[F].shift)
-      .map(r => converters.responseToStatus(r.sdkHttpResponse))
+      .as(BlobstoreStatus.ok()) recover {
+        case (_: NoSuchBucketException) =>
+          BlobstoreStatus.notFound()
+        case (e: S3Exception) if e.statusCode === 403 =>
+          BlobstoreStatus.noAccess()
+        case (e: S3Exception) =>
+          BlobstoreStatus.notOk(s"Unknown status: ${e.statusCode}")
+      }
 }
