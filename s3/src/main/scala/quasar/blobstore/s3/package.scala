@@ -1,5 +1,5 @@
 /*
- * Copyright 2014–2020 SlamData Inc.
+ * Copyright 2014–2019 SlamData Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,14 @@
  * limitations under the License.
  */
 
-package quasar.blobstore
+package quasar.blobstore.s3
 
-import scala.Predef.String
-import scala.collection.immutable.List
+import scala.Predef._
 
-object paths {
+final case class Bucket(value: String)
 
-  final case class PathElem(value: String)
+final case class AccessKey(value: String)
+final case class SecretKey(value: String)
+final case class Region(value: String)
 
-  type Path = List[PathElem]
-
-
-  trait BlobstorePath {
-    def path: Path
-  }
-
-  final case class PrefixPath(path: Path) extends BlobstorePath
-  final case class BlobPath(path: Path) extends BlobstorePath
-}
+final case class ObjectKey(value: String)
