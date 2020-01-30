@@ -1,5 +1,5 @@
 /*
- * Copyright 2014–2019 SlamData Inc.
+ * Copyright 2014–2020 SlamData Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ object converters {
 
   def toBlobstorePaths[F[_]](r: ContainerListBlobHierarchySegmentResponse)
       : Option[Stream[F, BlobstorePath]] = {
-    import scala.collection.JavaConverters._
+    import quasar.blobstore.CompatConverters.All._
 
     Option(r.body.segment).map { segm =>
       val l = segm.blobItems.asScala.map(blobItemToBlobPath) ++
@@ -98,5 +98,5 @@ object converters {
     PrefixPath(toPath(blobPrefix.name))
 
   def toPath(s: String): Path =
-    s.split("""/""").map(PathElem(_)).toList
+    s.split("""/""").map(PathElem(_)).view.toList
 }
