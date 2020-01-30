@@ -8,7 +8,7 @@ scmInfo in ThisBuild := Some(ScmInfo(
   url("https://github.com/slamdata/async-blobstore"),
   "scm:git@github.com:slamdata/async-blobstore.git"))
 
-val AwsSdkVersion = "2.9.1"
+val AwsSdkVersion = "2.9.26"
 val Fs2Version = "2.2.1"
 val MonixVersion = "3.0.0"
 
