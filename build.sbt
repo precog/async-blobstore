@@ -1,5 +1,8 @@
 import scala.collection.Seq
 
+ThisBuild / crossScalaVersions := Seq("2.12.10", "2.13.1")
+ThisBuild / scalaVersion := "2.12.10"
+
 ThisBuild / publishAsOSSProject := true
 
 homepage in ThisBuild := Some(url("https://github.com/slamdata/async-blobstore"))
