@@ -31,7 +31,7 @@ jobs:
         run: git config github.actor slamdata-bot
       - name: Compile and test
         run: $SBT ++${{ matrix.scala }} ci 
-      - name: Upload target
+      - name: Upload working directory
         uses: actions/upload-artifact@v1
         with:
           name: working-dir-${{ matrix.scala }}
@@ -52,6 +52,10 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: working-dir-${{ matrix.scala }}
+      - name: Install ruby
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: '2.6'
       - name: Set up JDK ${{ env.JDK }}
         uses: actions/setup-java@v1
         with:
