@@ -1,4 +1,4 @@
-name: asyncblobstorebuild
+name: build
 
 on:
   pull_request:
@@ -34,13 +34,13 @@ jobs:
       - name: Upload target
         uses: actions/upload-artifact@v1
         with:
-          name: target-${{ matrix.scala }}
-          path: target
+          name: working-dir-${{ matrix.scala }}
+          path: .
 
-  publishandtag:
+  publish-and-tag:
     name: Publish and Tag
     needs: [build]
-    if: github.event_name != 'pull_request' && (contains(github.head_ref, 'backport/v.*') || contains(github.head_ref, 'master'))
+    if: github.event_name != 'pull_request' && (contains(github.ref, 'backport/v.*') || contains(github.ref, 'master'))
     strategy:
       matrix:
         scala: [2.12.10]
@@ -51,7 +51,7 @@ jobs:
       - name: Download target artifacts
         uses: actions/download-artifact@v1
         with:
-          name: target-${{ matrix.scala }}
+          name: working-dir-${{ matrix.scala }}
       - name: Set up JDK ${{ env.JDK }}
         uses: actions/setup-java@v1
         with:
@@ -62,6 +62,8 @@ jobs:
         run: git config github.actor slamdata-bot
       - name: Transfer  Common Resources
         run: $SBT transferCommonResources
+      - name: Common setup
+        run: ./scripts/commonSetup
       - name: Export common secrets
         run: $SBT exportSecretsForActions
       - name: Transfer publish and tag resources
@@ -69,7 +71,7 @@ jobs:
       - name: Run publish and tag
         run: ./scripts/publishAndTag 'slamdata/async-blobstore'
 
-  commonResources:
+  auto-merge:
     name: Auto Merge
     if: github.event_name == 'pull_request' && contains(github.head_ref, 'version-bump')
     needs: [build]
@@ -85,7 +87,7 @@ jobs:
       - name: Download target artifacts
         uses: actions/download-artifact@v1
         with:
-          name: target-${{ matrix.scala }}
+          name: working-dir-${{ matrix.scala }}
       - name: Setup Git Actor
         run: git config github.actor slamdata-bot
       - name: Set up JDK ${{ env.JDK }}
@@ -99,7 +101,7 @@ jobs:
       - name: Transfer Common Resources
         run: $SBT transferCommonResources
       - name: Common setup
-        run: ./scripts/core/commonSetup
+        run: ./scripts/commonSetup
       - name: Export common secrets
         run: $SBT exportSecretsForActions
       - name: Set env vars
