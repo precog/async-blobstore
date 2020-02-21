@@ -64,5 +64,5 @@ lazy val azure = project
       "com.microsoft.azure" % "azure-storage-blob" % "10.5.0",
       "com.azure" % "azure-identity" % "1.0.0",
       "eu.timepit" %% "refined" % "0.9.9",
-      "io.reactivex.rxjava2" % "rxjava" % "2.2.2"))
+      "io.reactivex.rxjava2" % "rxjava" % "2.2.18"))
   .enablePlugins(AutomateHeaderPlugin)
