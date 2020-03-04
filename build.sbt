@@ -63,6 +63,6 @@ lazy val azure = project
       "io.netty" % "netty-all" % NettyVersion,
       "com.microsoft.azure" % "azure-storage-blob" % "10.5.0",
       "com.azure" % "azure-identity" % "1.0.0",
-      "eu.timepit" %% "refined" % "0.9.9",
+      "eu.timepit" %% "refined" % "0.9.13",
       "io.reactivex.rxjava2" % "rxjava" % "2.2.2"))
   .enablePlugins(AutomateHeaderPlugin)
