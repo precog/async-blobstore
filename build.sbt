@@ -5,11 +5,13 @@ ThisBuild / scalaVersion := "2.12.10"
 
 ThisBuild / publishAsOSSProject := true
 
-homepage in ThisBuild := Some(url("https://github.com/slamdata/async-blobstore"))
+ThisBuild / githubRepository := "async-blobstore"
+
+homepage in ThisBuild := Some(url("https://github.com/precog/async-blobstore"))
 
 scmInfo in ThisBuild := Some(ScmInfo(
-  url("https://github.com/slamdata/async-blobstore"),
-  "scm:git@github.com:slamdata/async-blobstore.git"))
+  url("https://github.com/precog/async-blobstore"),
+  "scm:git@github.com:precog/async-blobstore.git"))
 
 val AwsSdkVersion = "2.9.1"
 val Fs2Version = "2.2.1"
@@ -25,7 +27,6 @@ lazy val root = project
   .in(file("."))
   .settings(noPublishSettings)
   .aggregate(core, azure, s3)
-  .enablePlugins(AutomateHeaderPlugin)
 
 lazy val core = project
   .in(file("core"))
@@ -36,7 +37,6 @@ lazy val core = project
       "com.github.julien-truffaut" %% "monocle-core" % "1.6.0",
       "co.fs2" %% "fs2-core" % Fs2Version,
       "co.fs2" %% "fs2-reactive-streams" % Fs2Version))
-  .enablePlugins(AutomateHeaderPlugin)
 
 lazy val s3 = project
   .in(file("s3"))
@@ -50,7 +50,6 @@ lazy val s3 = project
       "io.monix" %% "monix-catnap" % MonixVersion,
       "software.amazon.awssdk" % "netty-nio-client" % AwsSdkVersion,
       "software.amazon.awssdk" % "s3" % AwsSdkVersion))
-  .enablePlugins(AutomateHeaderPlugin)
 
 lazy val azure = project
   .in(file("azure"))
@@ -65,4 +64,3 @@ lazy val azure = project
       "com.azure" % "azure-identity" % "1.0.0",
       "eu.timepit" %% "refined" % "0.9.9",
       "io.reactivex.rxjava2" % "rxjava" % "2.2.2"))
-  .enablePlugins(AutomateHeaderPlugin)
