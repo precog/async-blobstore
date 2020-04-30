@@ -57,7 +57,7 @@ object Azure extends Logging {
             .clientId(clientId.value)
             .tenantId(tenantId.value)
             .clientSecret(clientSecret.value)
-            .tokenRefreshOffset(Duration.ofMinutes(60));
+            .tokenRefreshOffset(Duration.ofMinutes(60))
           
             .build()
             .getToken((new TokenRequestContext)
