@@ -18,6 +18,7 @@ package quasar.blobstore.azure
 
 import java.net.URL
 import java.time.Instant
+import java.time.Duration
 
 import scala._
 import scala.Predef._
@@ -57,6 +58,7 @@ object Azure extends Logging {
             .clientId(clientId.value)
             .tenantId(tenantId.value)
             .clientSecret(clientSecret.value)
+            .tokenRefreshOffset(Duration.ofMinutes(60))
             .build()
             .getToken((new TokenRequestContext)
               .setScopes(List("https://storage.azure.com/.default").asJava)))
