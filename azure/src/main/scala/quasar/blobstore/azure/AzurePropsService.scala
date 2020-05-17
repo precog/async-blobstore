@@ -22,23 +22,25 @@ import quasar.blobstore.services.PropsService
 import cats.data.Kleisli
 import cats.effect.{Async, ContextShift}
 import cats.syntax.applicative._
-import com.microsoft.azure.storage.blob.{BlobAccessConditions, BlobURL, ContainerURL}
-import com.microsoft.azure.storage.blob.models.BlobGetPropertiesResponse
-import com.microsoft.rest.v2.Context
+import com.azure.storage.blob.{BlobAsyncClient, BlobContainerAsyncClient}
+import com.azure.storage.blob.models.BlobProperties
+
 
 object AzurePropsService {
   def apply[F[_]: Async: ContextShift](
-      containerURL: ContainerURL,
-      mkArgs: BlobURL => BlobPropsArgs)
-      : PropsService[F, BlobGetPropertiesResponse] =
-    converters.blobPathToBlobURLK(containerURL) andThen
-      Kleisli[F, BlobURL, BlobPropsArgs](mkArgs(_).pure[F]) andThen
-      requests.blobPropsRequestK mapF
-      handlers.recoverNotFound[F, BlobGetPropertiesResponse]
+      containerClient: BlobContainerAsyncClient,
+      mkArgs: BlobAsyncClient => BlobPropsArgs)
+      : PropsService[F, BlobProperties] = {
+    val res = converters.blobPathToBlobClientK(containerClient) andThen
+      Kleisli[F, BlobAsyncClient, BlobPropsArgs](mkArgs(_).pure[F]) andThen
+      requests.blobPropsRequestK.map(_.getValue())
 
-  def mk[F[_]: Async: ContextShift](containerURL: ContainerURL)
-      : PropsService[F, BlobGetPropertiesResponse] =
+    handlers.recoverToNone(res)
+  }
+
+  def mk[F[_]: Async: ContextShift](containerClient: BlobContainerAsyncClient)
+      : PropsService[F, BlobProperties] =
     AzurePropsService[F](
-      containerURL,
-      BlobPropsArgs(_, BlobAccessConditions.NONE, Context.NONE))
+      containerClient,
+      BlobPropsArgs(_, null))
 }

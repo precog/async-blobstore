@@ -16,106 +16,91 @@
 
 package quasar.blobstore.azure
 
+import java.nio.ByteBuffer
+import scala.Boolean
 import scala.Predef._
 
-import scala.{Int, Array, Boolean, Option}
-
-import java.lang.SuppressWarnings
-import java.nio.ByteBuffer
-
 import cats.data.Kleisli
-import cats.effect.{Async, ContextShift, Sync}
+import cats.effect.{Async, ConcurrentEffect, ContextShift, Sync}
+import cats.syntax.applicative._
 import cats.syntax.flatMap._
-import com.microsoft.azure.storage.blob._
-import com.microsoft.azure.storage.blob.models._
-import com.microsoft.rest.v2.Context
-import io.reactivex.Flowable
+import com.azure.core.http.rest.Response
+import com.azure.storage.blob._
+import com.azure.storage.blob.models._
+import fs2.Stream
+import reactor.core.publisher.Flux
 
 object requests {
 
   final case class ListBlobHierarchyArgs(
-    containerURL: ContainerURL,
-    marker: Option[String],
+    containerClient: BlobContainerAsyncClient,
     delimiter: String,
-    options: ListBlobsOptions,
-    context: Context)
+    options: ListBlobsOptions)
 
-  @SuppressWarnings(Array("org.wartremover.warts.Null"))
-  def listRequest[F[_]: Async: ContextShift](
-    args: ListBlobHierarchyArgs): F[ContainerListBlobHierarchySegmentResponse] =
-    Sync[F].delay(
-      args.containerURL.listBlobsHierarchySegment(
-        args.marker.orNull,
-        args.delimiter,
-        args.options,
-        args.context)) >>=
-      rx.singleToAsync[F, ContainerListBlobHierarchySegmentResponse]
+  def listRequest[F[_]: ConcurrentEffect: ContextShift](
+      args: ListBlobHierarchyArgs)
+    : F[Stream[F, BlobItem]] =
+      Sync[F].delay(
+        reactive.fluxToStream[F, BlobItem](
+          args.containerClient.listBlobsByHierarchy(
+            args.delimiter,
+            args.options)))
 
-  def listRequestK[F[_]: Async: ContextShift]
-      : Kleisli[F, ListBlobHierarchyArgs, ContainerListBlobHierarchySegmentResponse] =
+  def listRequestK[F[_]: ConcurrentEffect: ContextShift]
+      : Kleisli[F, ListBlobHierarchyArgs, Stream[F, BlobItem]] =
     Kleisli(listRequest[F])
 
   final case class BlobPropsArgs(
-    blobURL: BlobURL,
-    blobAccessConditions: BlobAccessConditions,
-    context: Context)
+    blobClient: BlobAsyncClient,
+    blobRequestConditions: BlobRequestConditions)
 
   def blobPropsRequest[F[_]: Async: ContextShift](
-    args: BlobPropsArgs): F[BlobGetPropertiesResponse] =
-    Sync[F].delay(args.blobURL.getProperties(args.blobAccessConditions, args.context)) >>=
-      rx.singleToAsync[F, BlobGetPropertiesResponse]
+      args: BlobPropsArgs)
+      : F[Response[BlobProperties]] =
+    Sync[F].delay(args.blobClient.getPropertiesWithResponse(args.blobRequestConditions)) >>=
+      reactive.monoToAsync[F, Response[BlobProperties]]
 
   def blobPropsRequestK[F[_]: Async: ContextShift]
-      : Kleisli[F, BlobPropsArgs, BlobGetPropertiesResponse] =
+      : Kleisli[F, BlobPropsArgs, Response[BlobProperties]] =
     Kleisli(blobPropsRequest[F])
 
-  final case class DownloadArgs(
-    blobURL: BlobURL,
-    blobRange: BlobRange,
-    blobAccessConditions: BlobAccessConditions,
-    rangeGetContentMD5: Boolean,
-    context: Context)
+  final case class DownloadArgs(blobClient: BlobAsyncClient)
 
-  def downloadRequest[F[_]: Async: ContextShift](args: DownloadArgs): F[DownloadResponse] =
-    Sync[F].delay(
-      args.blobURL.download(
-        args.blobRange,
-        args.blobAccessConditions,
-        args.rangeGetContentMD5,
-        args.context)) >>=
-      rx.singleToAsync[F, DownloadResponse]
+  def downloadRequest[F[_]: ConcurrentEffect: ContextShift](
+      args: DownloadArgs)
+      : F[Stream[F, ByteBuffer]] =
+    Sync[F].delay(args.blobClient.download())
+      .flatMap(b => reactive.fluxToStream[F, ByteBuffer](b).pure[F])
 
-  def downloadRequestK[F[_]: Async: ContextShift]: Kleisli[F, DownloadArgs, DownloadResponse] =
+  def downloadRequestK[F[_]: ConcurrentEffect: ContextShift]: Kleisli[F, DownloadArgs, Stream[F, ByteBuffer]] =
     Kleisli(downloadRequest[F])
 
   final case class ContainerPropsArgs(
-    containerURL: ContainerURL,
-    leaseAccessConditions: LeaseAccessConditions,
-    context: Context)
+    containerClient: BlobContainerAsyncClient,
+    leaseId: String)
 
   def containerPropsRequest[F[_]: Async: ContextShift](
-    args: ContainerPropsArgs): F[ContainerGetPropertiesResponse] =
-    Sync[F].delay(args.containerURL.getProperties(args.leaseAccessConditions, args.context)) >>=
-      rx.singleToAsync[F, ContainerGetPropertiesResponse]
+      args: ContainerPropsArgs): F[Response[BlobContainerProperties]] =
+    Sync[F].delay(args.containerClient.getPropertiesWithResponse(args.leaseId)) >>=
+      reactive.monoToAsync[F, Response[BlobContainerProperties]]
 
   def containerPropsRequestK[F[_]: Async: ContextShift]
-      : Kleisli[F, ContainerPropsArgs, ContainerGetPropertiesResponse] =
+      : Kleisli[F, ContainerPropsArgs, Response[BlobContainerProperties]] =
     Kleisli(containerPropsRequest[F])
 
   final case class UploadRequestArgs(
-    source: Flowable[ByteBuffer],
-    url: BlockBlobURL,
-    blockSize: Int,
-    numBuffers: Int,
-    options: TransferManagerUploadToBlockBlobOptions)
+    bytes: Flux[ByteBuffer],
+    blobClient: BlobAsyncClient,
+    parallelTransferOptions: ParallelTransferOptions,
+    overwrite: Boolean)
 
   def uploadRequest[F[_]: Async: ContextShift](args: UploadRequestArgs)
-      : F[BlockBlobCommitBlockListResponse] =
-    Async[F].delay(TransferManager.uploadFromNonReplayableFlowable(
-      args.source, args.url, args.blockSize, args.numBuffers, args.options)) >>=
-        rx.singleToAsync[F, BlockBlobCommitBlockListResponse]
+      : F[BlockBlobItem] =
+    Sync[F].delay(
+      args.blobClient.upload(args.bytes, args.parallelTransferOptions, args.overwrite)
+    ) >>= reactive.monoToAsync[F, BlockBlobItem]
 
   def uploadRequestK[F[_]: Async: ContextShift]
-      : Kleisli[F, UploadRequestArgs, BlockBlobCommitBlockListResponse] =
+      : Kleisli[F, UploadRequestArgs, BlockBlobItem] =
     Kleisli(uploadRequest[F])
 }

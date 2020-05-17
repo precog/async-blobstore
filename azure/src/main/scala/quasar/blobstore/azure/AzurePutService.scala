@@ -16,44 +16,49 @@
 
 package quasar.blobstore.azure
 
-import scala._
-
 import quasar.blobstore.azure.requests.UploadRequestArgs
 import quasar.blobstore.paths.BlobPath
 import quasar.blobstore.services.PutService
 
-import com.microsoft.azure.storage.blob._
-
 import java.nio.ByteBuffer
+import scala._
 
-import cats.effect.{ContextShift, ConcurrentEffect}
 import cats.data.Kleisli
+import cats.effect.{ContextShift, ConcurrentEffect}
+import cats.syntax.functor._
 import fs2.Stream
+import com.azure.storage.blob.{BlobAsyncClient, BlobContainerAsyncClient}
+import com.azure.storage.blob.models.ParallelTransferOptions
+import reactor.core.publisher.Flux
 
 object AzurePutService {
-  private val ChunkLength = 10 * 1024 * 1024
-  private val Buffers = 2
+
+  private val DefaultBlockSize = Int.box(10 * 1024 * 1024)
+  private val DefaultNumBuffers = Int.box(2)
 
   def apply[F[_]: ContextShift: ConcurrentEffect](
-    containerURL: ContainerURL,
-    blockSize: Int,
-    numBuffers: Int,
-    transferOptions: TransferManagerUploadToBlockBlobOptions)
-      : PutService[F] =
-    for {
+      containerClient: BlobContainerAsyncClient,
+      mkArgs: (Flux[ByteBuffer], BlobAsyncClient) => UploadRequestArgs)
+      : PutService[F] = {
+    val res = for {
       (blobPath, st) <- Kleisli.ask[F, (BlobPath, Stream[F, Byte])]
-      url <- Kleisli.liftF(converters.mkBlobUrl(containerURL)(blobPath))
-      blockURL = url.toBlockBlobURL
-      flowable = rx.streamToFlowable[F, ByteBuffer](st.chunks.map(_.toByteBuffer))
-      args = UploadRequestArgs(flowable, blockURL, blockSize, numBuffers, transferOptions)
-      upload <- Kleisli.liftF(requests.uploadRequest(args))
-    } yield upload.statusCode
+      blobClient <- Kleisli.liftF(converters.mkBlobClient(containerClient)(blobPath))
+      flux = reactive.streamToFlux[F, ByteBuffer](st.chunks.map(_.toByteBuffer))
+      args = mkArgs(flux, blobClient)
+      statusCode <- Kleisli.liftF(requests.uploadRequest[F](args).map(_ => 200))
+    } yield statusCode
 
-  def mk[F[_]: ConcurrentEffect: ContextShift](containerURL: ContainerURL)
+    handlers.recoverToStatusCode(res)
+  }
+
+  def mk[F[_]: ConcurrentEffect: ContextShift](containerClient: BlobContainerAsyncClient)
       : PutService[F] =
     AzurePutService(
-      containerURL,
-      ChunkLength,
-      Buffers,
-      TransferManagerUploadToBlockBlobOptions.DEFAULT)
+      containerClient,
+      (flux, blobClient) =>
+        UploadRequestArgs(
+          flux,
+          blobClient,
+          new ParallelTransferOptions(DefaultBlockSize, DefaultNumBuffers, null),
+          overwrite = false))
 }
