@@ -21,31 +21,16 @@ import quasar.blobstore.services.GetService
 
 import scala.Byte
 
-import cats.data.Kleisli
 import cats.effect.{ConcurrentEffect, ContextShift}
-import cats.syntax.applicative._
-import com.microsoft.azure.storage.blob._
-import com.microsoft.rest.v2.Context
+import com.azure.storage.blob.BlobContainerAsyncClient
 import fs2.Stream
 
 object AzureGetService {
 
-  def apply[F[_]: ConcurrentEffect: ContextShift](
-      containerURL: ContainerURL,
-      mkArgs: BlobURL => DownloadArgs,
-      reliableDownloadOptions: ReliableDownloadOptions,
-      maxQueueSize: MaxQueueSize)
-      : GetService[F] =
-    converters.blobPathToBlobURLK(containerURL) andThen
-      Kleisli[F, BlobURL, DownloadArgs](mkArgs(_).pure[F]) andThen
+  def mk[F[_]: ConcurrentEffect: ContextShift](containerClient: BlobContainerAsyncClient): GetService[F] =
+    (converters.blobPathToBlobClientK(containerClient) map (DownloadArgs(_))) andThen
       requests.downloadRequestK andThen
-      handlers.toByteStreamK(reliableDownloadOptions, maxQueueSize) mapF
-      handlers.recoverNotFound[F, Stream[F, Byte]]
-
-  def mk[F[_]: ConcurrentEffect: ContextShift](containerURL: ContainerURL, maxQueueSize: MaxQueueSize): GetService[F] =
-    AzureGetService(
-      containerURL,
-      DownloadArgs(_, BlobRange.DEFAULT, BlobAccessConditions.NONE, false, Context.NONE),
-      new ReliableDownloadOptions,
-      maxQueueSize)
+      handlers.toByteStreamK andThen
+      handlers.raiseInnerStreamErrorK[F, Byte] mapF
+      handlers.recoverToNone[F, Stream[F, Byte]]
 }

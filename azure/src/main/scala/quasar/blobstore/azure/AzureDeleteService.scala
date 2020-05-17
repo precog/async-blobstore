@@ -16,32 +16,26 @@
 
 package quasar.blobstore.azure
 
-import scala.StringContext
-
 import quasar.blobstore.BlobstoreStatus
 import quasar.blobstore.paths.BlobPath
 import quasar.blobstore.services.DeleteService
 
-import com.microsoft.azure.storage.blob.ContainerURL
-
 import cats.data.Kleisli
 import cats.effect.{Async, ContextShift}
+import cats.syntax.functor._
+import com.azure.storage.blob.BlobContainerAsyncClient
 
 object AzureDeleteService {
-  def apply[F[_]: Async: ContextShift](containerURL: ContainerURL)
-      : DeleteService[F] =
-    for {
-      blobPath <- Kleisli.ask[F, BlobPath]
-      blobUrl <- Kleisli.liftF(converters.mkBlobUrl(containerURL)(blobPath))
-      response <- Kleisli.liftF(rx.singleToAsync(blobUrl.delete()))
-    } yield response.statusCode match {
-      case 202 => BlobstoreStatus.ok()
-      case 403 => BlobstoreStatus.noAccess()
-      case 404 => BlobstoreStatus.notFound()
-      case other => BlobstoreStatus.notOk(s"Azure returned status $other")
-    }
 
-  def mk[F[_]: Async: ContextShift](containerURL: ContainerURL)
-      : DeleteService[F] =
-    apply[F](containerURL)
+  def mk[F[_]: Async: ContextShift](containerClient: BlobContainerAsyncClient)
+      : DeleteService[F] = {
+
+    val res = for {
+      blobPath <- Kleisli.ask[F, BlobPath]
+      blobClient <- Kleisli.liftF(converters.mkBlobClient(containerClient)(blobPath))
+      status <- Kleisli.liftF(reactive.monoToAsync(blobClient.delete()).map(_ => BlobstoreStatus.ok()))
+    } yield status
+
+    handlers.recoverToBlobstoreStatus(res)
+  }
 }

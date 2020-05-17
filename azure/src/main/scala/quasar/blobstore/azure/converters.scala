@@ -16,12 +16,13 @@
 
 package quasar.blobstore.azure
 
+import quasar.blobstore.BlobstoreStatus
 import quasar.blobstore.paths._
 
 import java.lang.{Integer, SuppressWarnings}
-
 import scala.{Array, Option, Some}
 import scala.Predef.{genericArrayOps, String}
+import scala.StringContext
 
 import cats.Applicative
 import cats.data.Kleisli
@@ -29,34 +30,59 @@ import cats.effect.Sync
 import cats.instances.string._
 import cats.syntax.applicative._
 import cats.syntax.eq._
-import com.microsoft.azure.storage.blob.models.{BlobItem, BlobPrefix, ContainerListBlobHierarchySegmentResponse}
-import com.microsoft.azure.storage.blob.{BlobListingDetails, BlobURL, ContainerURL, ListBlobsOptions}
+import cats.syntax.option._
+import com.azure.core.http.rest.Response
+import com.azure.storage.blob.{BlobAsyncClient, BlobContainerAsyncClient}
+import com.azure.storage.blob.models.{BlobItem, BlobListDetails, ListBlobsOptions}
 import fs2.Stream
 
 object converters {
 
-  def blobPathToBlobURLK[F[_]: Sync](containerURL: ContainerURL): Kleisli[F, BlobPath, BlobURL] =
-    Kleisli(mkBlobUrl[F](containerURL))
+  def responseToBlobstoreStatus[A](response: Response[A]): BlobstoreStatus =
+    response.getStatusCode() match {
+      case 200 => BlobstoreStatus.ok()
+      case 202 => BlobstoreStatus.ok()
+      case 403 => BlobstoreStatus.noAccess()
+      case 404 => BlobstoreStatus.notFound()
+      case other => BlobstoreStatus.notOk(s"Azure returned status $other")
+    }
 
-  def prefixPathToListBlobOptionsK[F[_]: Applicative](details: Option[BlobListingDetails], maxResults: Option[Integer])
+  def responseToBlobstoreStatusK[F[_]: Applicative, A]: Kleisli[F, Response[A], BlobstoreStatus] =
+    Kleisli(r => responseToBlobstoreStatus[A](r).pure[F])
+
+  def blobPathToBlobClientK[F[_]: Sync](containerClient: BlobContainerAsyncClient): Kleisli[F, BlobPath, BlobAsyncClient] =
+    Kleisli(mkBlobClient[F](containerClient))
+
+  def prefixPathToListBlobOptionsK[F[_]: Applicative](details: Option[BlobListDetails], maxResults: Option[Integer])
       : Kleisli[F, PrefixPath, ListBlobsOptions] =
     Kleisli(p => mkListBlobsOptions(details, maxResults, Some(p)).pure[F])
 
-  def toBlobstorePathsK[F[_]: Applicative]
-      : Kleisli[F, ContainerListBlobHierarchySegmentResponse, Option[Stream[F, BlobstorePath]]] =
-    Kleisli(toBlobstorePaths[F](_).pure[F])
+  def toBlobstorePaths[F[_]](
+      s: Stream[F, BlobItem])
+      : Stream[F, BlobstorePath] =
+    s.map(blobItemToBlobPath)
 
+  def toBlobstorePathsK[F[_]: Applicative]
+      : Kleisli[F, Stream[F, BlobItem], Option[Stream[F, BlobstorePath]]] =
+    Kleisli(s => toBlobstorePaths[F](s).some.pure[F])
 
   def mkListBlobsOptions(
-      details: Option[BlobListingDetails],
+      details: Option[BlobListDetails],
       maxResults: Option[Integer],
       prefix: Option[PrefixPath])
       : ListBlobsOptions = {
 
-    def updateMaxResults(o: ListBlobsOptions): ListBlobsOptions = maxResults.map(o.withMaxResults).getOrElse(o)
-    def updatePrefix(o: ListBlobsOptions): ListBlobsOptions = prefix.map(p => o.withPrefix(normalizePrefix((pathToPrefix(p))))).getOrElse(o)
-    def updateDetails(o: ListBlobsOptions): ListBlobsOptions = details.map(o.withDetails).getOrElse(o)
-    def update(o: ListBlobsOptions): ListBlobsOptions = updateMaxResults(updatePrefix(updateDetails(o)))
+    def updateMaxResults(o: ListBlobsOptions): ListBlobsOptions =
+      maxResults.map(o.setMaxResultsPerPage).getOrElse(o)
+
+    def updatePrefix(o: ListBlobsOptions): ListBlobsOptions =
+      prefix.map(p => o.setPrefix(normalizePrefix((pathToPrefix(p))))).getOrElse(o)
+
+    def updateDetails(o: ListBlobsOptions): ListBlobsOptions =
+      details.map(o.setDetails).getOrElse(o)
+
+    def update(o: ListBlobsOptions): ListBlobsOptions =
+      updateMaxResults(updatePrefix(updateDetails(o)))
 
     update(new ListBlobsOptions())
   }
@@ -67,8 +93,8 @@ object converters {
     if (s === "/") "" else s
   }
 
-  def mkBlobUrl[F[_]: Sync](containerURL: ContainerURL)(path: BlobPath): F[BlobURL] =
-    Sync[F].delay(containerURL.createBlobURL(blobPathToString(path)))
+  def mkBlobClient[F[_]: Sync](containerClient: BlobContainerAsyncClient)(path: BlobPath): F[BlobAsyncClient] =
+    Sync[F].delay(containerClient.getBlobAsyncClient(blobPathToString(path)))
 
   private def blobPathToString(blobPath: BlobPath): String = {
     val names = blobPath.path.map(_.value)
@@ -80,22 +106,13 @@ object converters {
     if (name.endsWith("//")) normalizePrefix(name.substring(0, name.length - 1))
     else name
 
-  def toBlobstorePaths[F[_]](r: ContainerListBlobHierarchySegmentResponse)
-      : Option[Stream[F, BlobstorePath]] = {
-    import quasar.blobstore.CompatConverters.All._
-
-    Option(r.body.segment).map { segm =>
-      val l = segm.blobItems.asScala.map(blobItemToBlobPath) ++
-        segm.blobPrefixes.asScala.map(blobPrefixToPrefixPath)
-      Stream.emits(l).covary[F]
-    }
+  def blobItemToBlobPath(blobItem: BlobItem): BlobstorePath = {
+    val isPrefix =
+      if (blobItem.isPrefix() == null) false
+      else blobItem.isPrefix().booleanValue()
+    if (isPrefix) PrefixPath(toPath(blobItem.getName))
+    else BlobPath(toPath(blobItem.getName))
   }
-
-  def blobItemToBlobPath(blobItem: BlobItem): BlobstorePath =
-    BlobPath(toPath(blobItem.name))
-
-  def blobPrefixToPrefixPath(blobPrefix: BlobPrefix): BlobstorePath =
-    PrefixPath(toPath(blobPrefix.name))
 
   def toPath(s: String): Path =
     s.split("""/""").map(PathElem(_)).view.toList

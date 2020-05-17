@@ -16,25 +16,22 @@
 
 package quasar.blobstore.azure
 
-import java.net.URL
-import java.time.Instant
-import java.time.Duration
+import quasar.blobstore.azure.AzureCredentials.ActiveDirectory
+import quasar.blobstore.CompatConverters.All._
 
+import java.time.{Duration, Instant}
 import scala._
 import scala.Predef._
 import scala.concurrent.duration.MILLISECONDS
 
-import quasar.blobstore.CompatConverters.All._
-
 import cats._
 import cats.implicits._
-import cats.effect.{ConcurrentEffect, Sync, Timer}
+import cats.effect.{Async, ConcurrentEffect, ContextShift, Sync, Timer}
 import cats.effect.concurrent.Ref
-
-import com.microsoft.azure.storage.blob._
-import com.azure.identity.ClientSecretCredentialBuilder
 import com.azure.core.credential.{AccessToken, TokenRequestContext}
-
+import com.azure.identity.ClientSecretCredentialBuilder
+import com.azure.storage.blob._
+import com.azure.storage.common.StorageSharedKeyCredential
 import org.slf4s.Logging
 
 object Azure extends Logging {
@@ -42,59 +39,62 @@ object Azure extends Logging {
   def mkStdStorageUrl(name: AccountName): StorageUrl =
     StorageUrl(s"https://${name.value}.blob.core.windows.net/")
 
-  def mkCredentials[F[_]: ConcurrentEffect](cred: Option[AzureCredentials]): F[Expires[ICredentials]] =
-    cred match {
-      case None =>
-        Expires.never(
-          new AnonymousCredentials: ICredentials).pure[F]
+  def getAccessToken[F[_]: Async: ContextShift](ad: ActiveDirectory): F[Expires[AccessToken]] =
+    Sync[F].delay {
+      (new ClientSecretCredentialBuilder)
+        .clientId(ad.clientId.value)
+        .tenantId(ad.tenantId.value)
+        .clientSecret(ad.clientSecret.value)
+        .tokenRefreshOffset(Duration.ofMinutes(60))
+        .build()
+        .getToken((new TokenRequestContext)
+          .setScopes(List("https://storage.azure.com/.default").asJava))
+    } flatMap reactive.monoToAsync[F, AccessToken] map (t => Expires(t, t.getExpiresAt()))
 
-      case Some(AzureCredentials.SharedKey(accountName, accountKey)) =>
-        Expires.never(
-          new SharedKeyCredentials(accountName.value, accountKey.value): ICredentials).pure[F]
-
-      case Some(AzureCredentials.ActiveDirectory(clientId, tenantId, clientSecret)) =>
-        rx.publisherToStream[F, AccessToken](
-          (new ClientSecretCredentialBuilder)
-            .clientId(clientId.value)
-            .tenantId(tenantId.value)
-            .clientSecret(clientSecret.value)
-            .tokenRefreshOffset(Duration.ofMinutes(60))
-            .build()
-            .getToken((new TokenRequestContext)
-              .setScopes(List("https://storage.azure.com/.default").asJava)))
-          .compile
-          .lastOrError
-          .map(tk => Expires(new TokenCredentials(tk.getToken), tk.getExpiresAt))
-    }
-
-  def mkContainerUrl[F[_]](cfg: Config)(implicit F: ConcurrentEffect[F]): F[Expires[ContainerURL]] =
-    F.catchNonFatal(new URL(cfg.storageUrl.value)) flatMap { url =>
-      // Azure SDK changed its logging behavior in 10.3.0 (compared to 10.2.0).
-      // In 10.2.0 the standard `new PipelineOptions` could be used, but in 10.3.0
-      // this results in messages being logged to console in eg quasar's repl
-      // (despite having no console logger configured).
-      // Still not having a full understanding of how this logging is supposed to work
-      // exactly (e.g. `withLogger`) but adding `LoggingOptions` with
-      // `disableDefaultLogging = true` seems to be fixing it.
-      // As an aside, in case we need to look at this in the future,
-      // Azure SDK has 2 loggers for some reason:
-      // - `com.microsoft.azure.storage.blob.LoggingFactory`
-      // - `Azure Storage Java SDK`
-
-      Functor[F].compose[Expires].map(mkCredentials(cfg.credentials)) { creds =>
-        val pipeline =
-          StorageURL.createPipeline(
-            creds, new PipelineOptions().withLoggingOptions(new LoggingOptions(3000, true)))
-
-        new ServiceURL(url, pipeline).createContainerURL(cfg.containerName.value)
+  def setCredentials[F[_]: ConcurrentEffect: ContextShift](
+      cred: AzureCredentials,
+      builder: BlobContainerClientBuilder)
+      : F[Expires[BlobContainerClientBuilder]] =
+    ConcurrentEffect[F].delay {
+      cred match {
+        case AzureCredentials.SharedKey(accountName, accountKey) =>
+          Expires.never(
+            builder
+              .credential(new StorageSharedKeyCredential(accountName.value, accountKey.value))).pure[F]
+        case ad@AzureCredentials.ActiveDirectory(_, _, _) =>
+          Functor[F].compose[Expires].map(getAccessToken[F](ad)) { token =>
+            builder.sasToken(token.getToken)
+          }
       }
-    }
+    }.flatten
 
-  def refContainerUrl[F[_]: ConcurrentEffect: Timer](cfg: Config)
-      : F[(Ref[F, Expires[ContainerURL]], F[Unit])] =
+    def mkBuilder[F[_]](cfg: Config)(implicit F: Sync[F]): F[BlobContainerClientBuilder] =
+      F.catchNonFatal {
+        new BlobContainerClientBuilder()
+          .endpoint(cfg.storageUrl.value)
+          .containerName(cfg.containerName.value)
+          //TODO
+          // .httpLogOptions(new HttpLogOptions().setLogLevel(HttpLogDetailLevel.BODY_AND_HEADERS))
+      }
+
+  def mkContainerClient[F[_]: ContextShift](
+      cfg: Config)(
+      implicit F: ConcurrentEffect[F])
+      : F[Expires[BlobContainerAsyncClient]] =
     for {
-      containerUrl <- mkContainerUrl(cfg)
-      ref <- Ref.of[F, Expires[ContainerURL]](containerUrl)
+      builder <- mkBuilder(cfg)
+      newBuilder <-
+        cfg.credentials
+          .map(setCredentials[F](_, builder))
+          .getOrElse(Expires.never(builder).pure[F])
+      ec <- F.delay(newBuilder.map(_.buildAsyncClient()))
+    } yield ec
+
+  def refContainerClient[F[_]: ConcurrentEffect: ContextShift: Timer](cfg: Config)
+      : F[(Ref[F, Expires[BlobContainerAsyncClient]], F[Unit])] =
+    for {
+      containerClient <- mkContainerClient(cfg)
+      ref <- Ref.of[F, Expires[BlobContainerAsyncClient]](containerClient)
       refresh = for {
         epochNow <- Timer[F].clock.realTime(MILLISECONDS)
         now = Instant.ofEpochMilli(epochNow)
@@ -102,7 +102,7 @@ object Azure extends Logging {
 
         _ <- debug(s"Credentials expire on: ${expiresAt}")
 
-        refresh = mkContainerUrl(cfg).flatMap(ref.set(_))
+        refresh = mkContainerClient(cfg).flatMap(ref.set(_))
 
         _ <-
           if (now.isAfter(expiresAt.toInstant))
@@ -111,7 +111,6 @@ object Azure extends Logging {
             debug("Credentials are still valid.")
         } yield ()
     } yield (ref, refresh)
-
 
   private def debug[F[_]: Sync](str: String): F[Unit] =
     Sync[F].delay(log.debug(str))

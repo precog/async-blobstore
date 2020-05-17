@@ -14,27 +14,13 @@
  * limitations under the License.
  */
 
-package quasar.blobstore
+package quasar.blobstore.azure
 
-import quasar.blobstore.paths.{BlobPath, BlobstorePath, PrefixPath}
+import scala.concurrent.ExecutionContext
 
-import scala.{Byte, Int, Option}
+import cats.effect.{ContextShift, IO}
 
-import cats.data.Kleisli
-import fs2.Stream
-
-object services {
-
-  type DeleteService[F[_]] = Kleisli[F, BlobPath, BlobstoreStatus]
-
-  type GetService[F[_]] = Kleisli[F, BlobPath, Option[Stream[F, Byte]]]
-
-  type ListService[F[_]] = Kleisli[F, PrefixPath, Option[Stream[F, BlobstorePath]]]
-
-  type PropsService[F[_], P] = Kleisli[F, BlobPath, Option[P]]
-
-  type PutService[F[_]] = Kleisli[F, (BlobPath, Stream[F, Byte]), Int]
-
-  type StatusService[F[_]] = F[BlobstoreStatus]
-
+object testImplicits {
+  implicit val ec: ExecutionContext = ExecutionContext.global
+  implicit val cs: ContextShift[IO] = IO.contextShift(ec)
 }

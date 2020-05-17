@@ -19,50 +19,66 @@ package quasar.blobstore.azure
 import quasar.blobstore.BlobstoreStatus
 
 import java.lang.Throwable
-
-import scala.{Byte, Option}
+import java.nio.ByteBuffer
+import scala.{Byte, Int, None, Option, StringContext, Unit}
 import scala.util.control.NonFatal
 
 import cats.ApplicativeError
 import cats.data.Kleisli
-import cats.effect.ConcurrentEffect
+import cats.effect.Sync
 import cats.instances.int._
+import cats.syntax.applicative._
 import cats.syntax.applicativeError._
+import cats.syntax.apply._
 import cats.syntax.eq._
 import cats.syntax.functor._
 import cats.syntax.option._
-import com.microsoft.azure.storage.blob.{DownloadResponse, ReliableDownloadOptions, StorageException}
+import com.azure.storage.blob.models.BlobStorageException
 import fs2.{Chunk, Stream}
 
 object handlers {
 
-  def recoverToBlobstoreStatus[F[_]: ApplicativeError[?[_], Throwable], A](fa: F[A]): F[BlobstoreStatus] =
-    fa.map(_ => BlobstoreStatus.ok()).recover {
-      case ex: StorageException if ex.statusCode === 403 => BlobstoreStatus.noAccess()
-      case ex: StorageException if ex.statusCode === 404 => BlobstoreStatus.notFound()
-      case ex: StorageException => BlobstoreStatus.notOk(ex.message())
+  def recoverToBlobstoreStatus[F[_]: ApplicativeError[?[_], Throwable]](fa: F[BlobstoreStatus]): F[BlobstoreStatus] =
+    fa.recover {
+      case ex: BlobStorageException if ex.getStatusCode === 403 =>
+        BlobstoreStatus.noAccess()
+      case ex: BlobStorageException if ex.getStatusCode === 404 =>
+        BlobstoreStatus.notFound()
+      case ex: BlobStorageException =>
+        BlobstoreStatus.notOk(s"Status: ${ex.getStatusCode} Message:${ex.getMessage}")
       case NonFatal(t) => BlobstoreStatus.notOk(t.getMessage)
     }
 
-  def recoverNotFound[F[_], A](fa: F[A])(implicit F: ApplicativeError[F, Throwable]): F[Option[A]] =
-    F.recover(fa.map(_.some)) {
-      case ex: StorageException if ex.statusCode() === 404 => none
+  def recoverToStatusCode[F[_]: ApplicativeError[?[_], Throwable]](fa: F[Int]): F[Int] =
+    fa.recover {
+      case ex: BlobStorageException => ex.getStatusCode()
+      case NonFatal(_) => 500
     }
+
+  def recoverToNone[F[_], A](fa: F[A])(implicit F: ApplicativeError[F, Throwable]): F[Option[A]] =
+    F.recover(fa.map(_.some)) {
+      case NonFatal(_) => None
+    }
+
+  def raiseInnerStreamError[F[_]: Sync, A](
+      s: Stream[F,A])
+      : F[Stream[F, A]] =
+    s.compile.drain.handleErrorWith(_.raiseError[F, Unit]) *> s.pure[F]
+
+  def raiseInnerStreamErrorK[F[_]: Sync, A]: Kleisli[F, Stream[F, A], Stream[F, A]] =
+    Kleisli(raiseInnerStreamError[F, A])
 
   def recoverStorageException[F[_], A](fa: F[A])(implicit F: ApplicativeError[F, Throwable]): F[Option[A]] =
     F.recover(fa.map(_.some)) {
-      case ex: StorageException => none
+      case _: BlobStorageException => none
     }
 
-  def toByteStream[F[_]: ConcurrentEffect](reliableDownloadOptions: ReliableDownloadOptions, maxQueueSize: MaxQueueSize)(r: DownloadResponse): F[Stream[F, Byte]] =
-    ConcurrentEffect[F].delay {
-      for {
-        buf <- rx.flowableToStream(r.body(reliableDownloadOptions), maxQueueSize.value)
-        b <- Stream.chunk(Chunk.byteBuffer(buf))
-      } yield b
+  def toByteStream[F[_]: Sync](s: Stream[F, ByteBuffer]): F[Stream[F, Byte]] =
+    Sync[F].delay {
+      s flatMap (buf => Stream.chunk(Chunk.byteBuffer(buf)))
     }
 
-  def toByteStreamK[F[_]: ConcurrentEffect](reliableDownloadOptions: ReliableDownloadOptions, maxQueueSize: MaxQueueSize): Kleisli[F, DownloadResponse, Stream[F, Byte]] =
-    Kleisli(toByteStream[F](reliableDownloadOptions, maxQueueSize))
+  def toByteStreamK[F[_]: Sync]: Kleisli[F, Stream[F, ByteBuffer], Stream[F, Byte]] =
+    Kleisli(toByteStream[F])
 
 }

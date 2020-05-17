@@ -16,22 +16,20 @@
 
 package quasar.blobstore.azure
 
-import quasar.blobstore.BlobstoreStatus
 import quasar.blobstore.azure.requests.ContainerPropsArgs
 import quasar.blobstore.services.StatusService
 
-import cats.data.Kleisli
 import cats.effect.{Async, ContextShift}
-import com.microsoft.azure.storage.blob.ContainerURL
-import com.microsoft.azure.storage.blob.models.{ContainerGetPropertiesResponse, LeaseAccessConditions}
-import com.microsoft.rest.v2.Context
+import com.azure.storage.blob.BlobContainerAsyncClient
+import com.azure.storage.blob.models.BlobContainerProperties
 
 object AzureStatusService {
   def apply[F[_]: Async: ContextShift](args: ContainerPropsArgs): StatusService[F] =
     (requests.containerPropsRequestK[F] andThen
-      Kleisli.pure[F, ContainerGetPropertiesResponse, BlobstoreStatus](BlobstoreStatus.ok()) mapF
-      handlers.recoverToBlobstoreStatus[F, BlobstoreStatus]).apply(args)
+      converters.responseToBlobstoreStatusK[F, BlobContainerProperties] mapF
+      handlers.recoverToBlobstoreStatus[F]
+    ).apply(args)
 
-  def mk[F[_]: Async: ContextShift](containerURL: ContainerURL): StatusService[F] =
-    AzureStatusService[F](ContainerPropsArgs(containerURL, new LeaseAccessConditions, Context.NONE))
+  def mk[F[_]: Async: ContextShift](containerClient: BlobContainerAsyncClient): StatusService[F] =
+    AzureStatusService[F](ContainerPropsArgs(containerClient, null))
 }
