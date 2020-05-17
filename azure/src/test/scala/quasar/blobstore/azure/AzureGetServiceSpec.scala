@@ -22,7 +22,7 @@ import quasar.blobstore.paths._
 import quasar.blobstore.services.GetService
 
 import java.nio.charset.StandardCharsets
-import scala.{Byte, None, Some, StringContext}
+import scala.{Array, Byte, None, Some, StringContext}
 import scala.collection.immutable.List
 
 import cats.effect._
@@ -35,7 +35,7 @@ class AzureGetServiceSpec extends EffectfulSpec {
   "get service" >> {
 
     "existing blobpath returns expected bytes" >>* {
-      val expected = List("[1, 2]\n[3, 4]\n".getBytes(StandardCharsets.UTF_8) : _*)
+      val expected = "[1, 2]\n[3, 4]\n".getBytes(StandardCharsets.UTF_8)
 
       assertGet(
         mkService(PublicConfig),
@@ -58,12 +58,12 @@ object AzureGetServiceSpec extends EffectfulSpec {
   def assertGet(
       service: IO[GetService[IO]],
       blobPath: BlobPath,
-      matcher: Matcher[List[Byte]])
-      : IO[MatchResult[List[Byte]]] =
+      matcher: Matcher[Array[Byte]])
+      : IO[MatchResult[Array[Byte]]] =
     service flatMap { svc =>
       svc(blobPath).flatMap {
-        case Some(s) => s.compile.toList.map(_ must matcher)
-        case None => ko("Unexpected None").asInstanceOf[MatchResult[List[Byte]]].pure[IO]
+        case Some(s) => s.compile.to(Array).map(_ must matcher)
+        case None => ko("Unexpected None").asInstanceOf[MatchResult[Array[Byte]]].pure[IO]
       }
     }
 
