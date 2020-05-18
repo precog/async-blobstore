@@ -21,7 +21,7 @@ import quasar.blobstore.azure.testImplicits._
 import quasar.blobstore.paths._
 import quasar.blobstore.services.ListService
 
-import scala.{None, Some}
+import scala.{None, Some, StringContext}
 
 import cats.effect._
 import cats.syntax.applicative._
@@ -42,6 +42,16 @@ class AzureListServiceSpec extends EffectfulSpec {
       svc(prefixPath).flatMap {
         case Some(s) => s.compile.toList.map(_ must matcher)
         case None => ko("Unexpected None").asInstanceOf[MatchResult[List[BlobstorePath]]].pure[IO]
+      }
+    }
+
+  def assertNone(
+      service: IO[ListService[IO]],
+      prefixPath: PrefixPath) =
+    service flatMap { svc =>
+      svc(prefixPath).flatMap {
+        case Some(s) => ko(s"Unexpected Some: $s").pure[IO]
+        case None => ok.pure[IO]
       }
     }
 
@@ -69,13 +79,9 @@ class AzureListServiceSpec extends EffectfulSpec {
         be_===(expected))
     }
 
-    "non-existing prefix returns empty list" >>* {
-      val expected = List[BlobstorePath]()
-
-      assertList(
+    "non-existing prefix returns none" >>*
+      assertNone(
         mkService(PublicConfig),
-        PrefixPath(List(PathElem("does"), PathElem("not"), PathElem("exist"))),
-        be_===(expected))
-    }
+        PrefixPath(List(PathElem("does"), PathElem("not"), PathElem("exist"))))
   }
 }

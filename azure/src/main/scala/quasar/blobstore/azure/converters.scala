@@ -30,7 +30,6 @@ import cats.effect.Sync
 import cats.instances.string._
 import cats.syntax.applicative._
 import cats.syntax.eq._
-import cats.syntax.option._
 import com.azure.core.http.rest.Response
 import com.azure.storage.blob.{BlobAsyncClient, BlobContainerAsyncClient}
 import com.azure.storage.blob.models.{BlobItem, BlobListDetails, ListBlobsOptions}
@@ -63,8 +62,8 @@ object converters {
     s.map(blobItemToBlobPath)
 
   def toBlobstorePathsK[F[_]: Applicative]
-      : Kleisli[F, Stream[F, BlobItem], Option[Stream[F, BlobstorePath]]] =
-    Kleisli(s => toBlobstorePaths[F](s).some.pure[F])
+      : Kleisli[F, Stream[F, BlobItem], Stream[F, BlobstorePath]] =
+    Kleisli(s => toBlobstorePaths(s).pure[F])
 
   def mkListBlobsOptions(
       details: Option[BlobListDetails],

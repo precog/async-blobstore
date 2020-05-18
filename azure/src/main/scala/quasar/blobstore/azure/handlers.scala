@@ -20,7 +20,7 @@ import quasar.blobstore.BlobstoreStatus
 
 import java.lang.Throwable
 import java.nio.ByteBuffer
-import scala.{Byte, Int, None, Option, StringContext, Unit}
+import scala.{Byte, Int, None, Option, Some, StringContext, Unit}
 import scala.util.control.NonFatal
 
 import cats.ApplicativeError
@@ -80,5 +80,14 @@ object handlers {
 
   def toByteStreamK[F[_]: Sync]: Kleisli[F, Stream[F, ByteBuffer], Stream[F, Byte]] =
     Kleisli(toByteStream[F])
+
+  def emptyStreamToNone[F[_]: Sync, A](s: Stream[F, A]): F[Option[Stream[F, A]]] =
+    s.compile.last.map {
+      case None => None
+      case Some(_) => s.some
+    }
+
+  def emptyStreamToNoneK[F[_]: Sync, A]: Kleisli[F, Stream[F, A], Option[Stream[F, A]]] =
+    Kleisli(emptyStreamToNone[F, A])
 
 }

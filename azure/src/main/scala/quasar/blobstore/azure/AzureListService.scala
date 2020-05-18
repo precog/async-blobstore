@@ -17,7 +17,7 @@
 package quasar.blobstore.azure
 
 import quasar.blobstore.azure.requests.ListBlobHierarchyArgs
-import quasar.blobstore.paths.PrefixPath
+import quasar.blobstore.paths.{BlobstorePath, PrefixPath}
 import quasar.blobstore.services.ListService
 
 import java.lang.Integer
@@ -38,7 +38,8 @@ object AzureListService {
     toListBlobsOption map
       mkArgs andThen
       requests.listRequestK andThen
-      converters.toBlobstorePathsK
+      converters.toBlobstorePathsK andThen
+      handlers.emptyStreamToNoneK[F, BlobstorePath]
 
 
   def mk[F[_]: ConcurrentEffect: ContextShift](containerClient: BlobContainerAsyncClient): ListService[F] =
