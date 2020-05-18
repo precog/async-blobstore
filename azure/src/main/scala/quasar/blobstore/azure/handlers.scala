@@ -63,7 +63,9 @@ object handlers {
   def raiseInnerStreamError[F[_]: Sync, A](
       s: Stream[F,A])
       : F[Stream[F, A]] =
-    s.compile.drain.handleErrorWith(_.raiseError[F, Unit]) *> s.pure[F]
+    // we are only interested in errors at the beginning of the stream
+    // s.take(1) is sufficient rather than the whole stream s
+    s.take(1).compile.drain.handleErrorWith(_.raiseError[F, Unit]) *> s.pure[F]
 
   def raiseInnerStreamErrorK[F[_]: Sync, A]: Kleisli[F, Stream[F, A], Stream[F, A]] =
     Kleisli(raiseInnerStreamError[F, A])
@@ -82,7 +84,7 @@ object handlers {
     Kleisli(toByteStream[F])
 
   def emptyStreamToNone[F[_]: Sync, A](s: Stream[F, A]): F[Option[Stream[F, A]]] =
-    s.compile.last.map {
+    s.take(1).compile.last.map {
       case None => None
       case Some(_) => s.some
     }
