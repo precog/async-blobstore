@@ -30,7 +30,6 @@ object AzureGetService {
   def mk[F[_]: ConcurrentEffect: ContextShift](containerClient: BlobContainerAsyncClient): GetService[F] =
     (converters.blobPathToBlobClientK(containerClient) map (DownloadArgs(_))) andThen
       requests.downloadRequestK andThen
-      handlers.toByteStreamK andThen
       handlers.raiseInnerStreamErrorK[F, Byte] mapF
       handlers.recoverToNone[F, Stream[F, Byte]]
 }

@@ -19,8 +19,7 @@ package quasar.blobstore.azure
 import quasar.blobstore.BlobstoreStatus
 
 import java.lang.Throwable
-import java.nio.ByteBuffer
-import scala.{Byte, Int, None, Option, Some, StringContext, Unit}
+import scala.{Int, None, Option, Some, StringContext, Unit}
 import scala.util.control.NonFatal
 
 import cats.ApplicativeError
@@ -34,7 +33,7 @@ import cats.syntax.eq._
 import cats.syntax.functor._
 import cats.syntax.option._
 import com.azure.storage.blob.models.BlobStorageException
-import fs2.{Chunk, Stream}
+import fs2.Stream
 
 object handlers {
 
@@ -74,14 +73,6 @@ object handlers {
     F.recover(fa.map(_.some)) {
       case _: BlobStorageException => none
     }
-
-  def toByteStream[F[_]: Sync](s: Stream[F, ByteBuffer]): F[Stream[F, Byte]] =
-    Sync[F].delay {
-      s flatMap (buf => Stream.chunk(Chunk.byteBuffer(buf)))
-    }
-
-  def toByteStreamK[F[_]: Sync]: Kleisli[F, Stream[F, ByteBuffer], Stream[F, Byte]] =
-    Kleisli(toByteStream[F])
 
   def emptyStreamToNone[F[_]: Sync, A](s: Stream[F, A]): F[Option[Stream[F, A]]] =
     s.take(1).compile.last.map {
