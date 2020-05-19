@@ -16,20 +16,37 @@
 
 package quasar.blobstore.azure
 
-import quasar.blobstore.azure.requests.DownloadArgs
+import quasar.blobstore.azure.requests.{BlobPropsArgs, DownloadArgs}
 import quasar.blobstore.services.GetService
 
-import scala.Byte
+import scala.{Byte, None, Some}
 
+import cats.data.Kleisli
 import cats.effect.{ConcurrentEffect, ContextShift}
+import cats.implicits._
 import com.azure.storage.blob.BlobContainerAsyncClient
 import fs2.Stream
 
 object AzureGetService {
 
-  def mk[F[_]: ConcurrentEffect: ContextShift](containerClient: BlobContainerAsyncClient): GetService[F] =
-    (converters.blobPathToBlobClientK(containerClient) map (DownloadArgs(_))) andThen
-      requests.downloadRequestK andThen
-      handlers.raiseInnerStreamErrorK[F, Byte] mapF
-      handlers.recoverToNone[F, Stream[F, Byte]]
+  def mk[F[_]: ConcurrentEffect: ContextShift](
+      containerClient: BlobContainerAsyncClient)
+      : GetService[F] =
+    Kleisli { blobPath =>
+      for {
+        blobClient <- converters.mkBlobClient[F](containerClient)(blobPath)
+        props <- AzurePropsService.fromBlobPropsArgs[F].apply(BlobPropsArgs(blobClient, null))
+        res <- {
+          props match {
+            case None =>
+              none.pure[F]
+            case Some(_) =>
+              (requests.downloadRequestK[F] mapF
+                (handlers.recoverToNone[F, Stream[F, Byte]] _)
+              ).apply(DownloadArgs(blobClient))
+          }
+        }
+      } yield res
+    }
+
 }

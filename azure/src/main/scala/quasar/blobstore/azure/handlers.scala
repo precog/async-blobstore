@@ -19,16 +19,14 @@ package quasar.blobstore.azure
 import quasar.blobstore.BlobstoreStatus
 
 import java.lang.Throwable
-import scala.{Int, None, Option, Some, StringContext, Unit}
+import scala.{Int, None, Option, Some, StringContext}
 import scala.util.control.NonFatal
 
 import cats.ApplicativeError
 import cats.data.Kleisli
 import cats.effect.Sync
 import cats.instances.int._
-import cats.syntax.applicative._
 import cats.syntax.applicativeError._
-import cats.syntax.apply._
 import cats.syntax.eq._
 import cats.syntax.functor._
 import cats.syntax.option._
@@ -58,16 +56,6 @@ object handlers {
     F.recover(fa.map(_.some)) {
       case NonFatal(_) => None
     }
-
-  def raiseInnerStreamError[F[_]: Sync, A](
-      s: Stream[F,A])
-      : F[Stream[F, A]] =
-    // we are only interested in errors at the beginning of the stream
-    // s.take(1) is sufficient rather than the whole stream s
-    s.take(1).compile.drain.handleErrorWith(_.raiseError[F, Unit]) *> s.pure[F]
-
-  def raiseInnerStreamErrorK[F[_]: Sync, A]: Kleisli[F, Stream[F, A], Stream[F, A]] =
-    Kleisli(raiseInnerStreamError[F, A])
 
   def recoverStorageException[F[_], A](fa: F[A])(implicit F: ApplicativeError[F, Throwable]): F[Option[A]] =
     F.recover(fa.map(_.some)) {
