@@ -30,19 +30,10 @@ import scala.Option
 
 object AzurePropsService {
 
-  def fromBlobPropsArgs[F[_]: Async: ContextShift]//(
-      //blobClient: BlobAsyncClient,
-      // args: BlobPropsArgs)
-      : Kleisli[F, BlobPropsArgs, Option[BlobProperties]] = {
-    val res =
-      // Kleisli.pure(blobClient) andThen
-      // Kleisli.pure(args) andThen
-      // Kleisli[F, BlobAsyncClient, BlobPropsArgs](mkArgs(_).pure[F]) andThen
-      requests.blobPropsRequestK.map(_.getValue())
-
-    handlers.recoverToNone(res)
-
-  }
+  def fromBlobPropsArgs[F[_]: Async: ContextShift]
+      : Kleisli[F, BlobPropsArgs, Option[BlobProperties]] =
+    handlers.recoverToNone(
+      requests.blobPropsRequestK.map(_.getValue()))
 
   def apply[F[_]: Async: ContextShift](
       containerClient: BlobContainerAsyncClient,

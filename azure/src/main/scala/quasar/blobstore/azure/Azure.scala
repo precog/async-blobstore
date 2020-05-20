@@ -39,17 +39,23 @@ object Azure extends Logging {
   def mkStdStorageUrl(name: AccountName): StorageUrl =
     StorageUrl(s"https://${name.value}.blob.core.windows.net/")
 
-  def getAccessToken[F[_]: Async: ContextShift](ad: ActiveDirectory): F[Expires[AccessToken]] =
-    Sync[F].delay {
-      (new ClientSecretCredentialBuilder)
-        .clientId(ad.clientId.value)
-        .tenantId(ad.tenantId.value)
-        .clientSecret(ad.clientSecret.value)
-        .tokenRefreshOffset(Duration.ofMinutes(60))
-        .build()
-        .getToken((new TokenRequestContext)
-          .setScopes(List("https://storage.azure.com/.default").asJava))
-    } flatMap reactive.monoToAsync[F, AccessToken] map (t => Expires(t, t.getExpiresAt()))
+  def getAccessToken[F[_]: Async: ContextShift](ad: ActiveDirectory): F[Expires[AccessToken]] = {
+    val mkBuilder =
+      Sync[F].delay {
+        (new ClientSecretCredentialBuilder)
+          .clientId(ad.clientId.value)
+          .tenantId(ad.tenantId.value)
+          .clientSecret(ad.clientSecret.value)
+          .tokenRefreshOffset(Duration.ofMinutes(60))
+          .build()
+          .getToken((new TokenRequestContext)
+            .setScopes(List("https://storage.azure.com/.default").asJava))
+      }
+
+    mkBuilder
+      .flatMap(reactive.monoToAsync[F, AccessToken])
+      .map(t => Expires(t, t.getExpiresAt()))
+  }
 
   def setCredentials[F[_]: ConcurrentEffect: ContextShift](
       cred: AzureCredentials,
@@ -61,7 +67,7 @@ object Azure extends Logging {
           Expires.never(
             builder
               .credential(new StorageSharedKeyCredential(accountName.value, accountKey.value))).pure[F]
-        case ad@AzureCredentials.ActiveDirectory(_, _, _) =>
+        case ad @ AzureCredentials.ActiveDirectory(_, _, _) =>
           Functor[F].compose[Expires].map(getAccessToken[F](ad)) { token =>
             builder.sasToken(token.getToken)
           }

@@ -43,7 +43,7 @@ class AzureGetServiceSpec extends EffectfulSpec {
         be_===(expected))
     }
 
-    "non-existing blobpath returns expected bytes" >>*
+    "non-existing blobpath returns none" >>*
       assertGetNone(
         mkService(PublicConfig),
         BlobPath(List(PathElem("testdata"), PathElem("notthere"))))
