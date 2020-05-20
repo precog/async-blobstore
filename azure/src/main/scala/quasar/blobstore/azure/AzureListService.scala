@@ -26,6 +26,8 @@ import scala.{None, Some}
 
 import cats.data.Kleisli
 import cats.effect.{ConcurrentEffect, ContextShift}
+import cats.syntax.functor._
+import cats.syntax.option._
 import com.azure.storage.blob.BlobContainerAsyncClient
 import com.azure.storage.blob.models.ListBlobsOptions
 import fs2.Stream
@@ -41,8 +43,14 @@ object AzureListService {
       mkArgs andThen
       requests.listRequestK andThen
       converters.toBlobstorePathsK andThen
-      Kleisli((s: Stream[F, BlobstorePath]) =>
-        handlers.emptyStreamToNone[F, BlobstorePath](s).use(F.delay(_)))
+      Kleisli { (s: Stream[F, BlobstorePath]) =>
+        // this is a workaround since this evaluates the stream twice
+        // but peek1 cannot be used since this results in an error in Azure
+        s.take(1).compile.last.map {
+          case None => None
+          case Some(_) => s.some
+        }
+      }
 
   def mk[F[_]: ConcurrentEffect: ContextShift](containerClient: BlobContainerAsyncClient): ListService[F] =
     AzureListService[F](

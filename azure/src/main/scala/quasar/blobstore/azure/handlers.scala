@@ -23,14 +23,12 @@ import scala.{Int, None, Option, StringContext}
 import scala.util.control.NonFatal
 
 import cats.ApplicativeError
-import cats.effect.{Resource, Sync}
 import cats.instances.int._
 import cats.syntax.applicativeError._
 import cats.syntax.eq._
 import cats.syntax.functor._
 import cats.syntax.option._
 import com.azure.storage.blob.models.BlobStorageException
-import fs2.{Pull, Stream}
 
 object handlers {
 
@@ -60,12 +58,5 @@ object handlers {
     F.recover(fa.map(_.some)) {
       case _: BlobStorageException => none
     }
-
-  def emptyStreamToNone[F[_]: Sync, A](
-      s: Stream[F, A])
-      : Resource[F, Option[Stream[F, A]]] =
-    s.pull.peek1.flatMap(Pull.output1(_)).stream
-      .map(_.map(_._2))
-      .compile.resource.lastOrError
 
 }
