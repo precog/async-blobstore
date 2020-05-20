@@ -28,19 +28,21 @@ import cats.data.Kleisli
 import cats.effect.{ConcurrentEffect, ContextShift}
 import com.azure.storage.blob.BlobContainerAsyncClient
 import com.azure.storage.blob.models.ListBlobsOptions
+import fs2.Stream
 
 object AzureListService {
 
-  def apply[F[_]: ConcurrentEffect: ContextShift](
+  def apply[F[_]: ContextShift](
       toListBlobsOption: Kleisli[F, PrefixPath, ListBlobsOptions],
-      mkArgs: ListBlobsOptions => ListBlobHierarchyArgs)
+      mkArgs: ListBlobsOptions => ListBlobHierarchyArgs)(
+      implicit F: ConcurrentEffect[F])
       : ListService[F] =
     toListBlobsOption map
       mkArgs andThen
       requests.listRequestK andThen
       converters.toBlobstorePathsK andThen
-      handlers.emptyStreamToNoneK[F, BlobstorePath]
-
+      Kleisli((s: Stream[F, BlobstorePath]) =>
+        handlers.emptyStreamToNone[F, BlobstorePath](s).use(F.delay(_)))
 
   def mk[F[_]: ConcurrentEffect: ContextShift](containerClient: BlobContainerAsyncClient): ListService[F] =
     AzureListService[F](

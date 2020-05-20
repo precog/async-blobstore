@@ -19,19 +19,18 @@ package quasar.blobstore.azure
 import quasar.blobstore.BlobstoreStatus
 
 import java.lang.Throwable
-import scala.{Int, None, Option, Some, StringContext}
+import scala.{Int, None, Option, StringContext}
 import scala.util.control.NonFatal
 
 import cats.ApplicativeError
-import cats.data.Kleisli
-import cats.effect.Sync
+import cats.effect.{Resource, Sync}
 import cats.instances.int._
 import cats.syntax.applicativeError._
 import cats.syntax.eq._
 import cats.syntax.functor._
 import cats.syntax.option._
 import com.azure.storage.blob.models.BlobStorageException
-import fs2.Stream
+import fs2.{Pull, Stream}
 
 object handlers {
 
@@ -62,13 +61,11 @@ object handlers {
       case _: BlobStorageException => none
     }
 
-  def emptyStreamToNone[F[_]: Sync, A](s: Stream[F, A]): F[Option[Stream[F, A]]] =
-    s.take(1).compile.last.map {
-      case None => None
-      case Some(_) => s.some
-    }
-
-  def emptyStreamToNoneK[F[_]: Sync, A]: Kleisli[F, Stream[F, A], Option[Stream[F, A]]] =
-    Kleisli(emptyStreamToNone[F, A])
+  def emptyStreamToNone[F[_]: Sync, A](
+      s: Stream[F, A])
+      : Resource[F, Option[Stream[F, A]]] =
+    s.pull.peek1.flatMap(Pull.output1(_)).stream
+      .map(_.map(_._2))
+      .compile.resource.lastOrError
 
 }
