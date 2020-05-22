@@ -19,22 +19,16 @@ package quasar.blobstore.azure
 import quasar.blobstore.BlobstoreStatus
 
 import java.lang.Throwable
-import java.nio.ByteBuffer
-import scala.{Byte, Int, None, Option, StringContext, Unit}
+import scala.{Int, None, Option, StringContext}
 import scala.util.control.NonFatal
 
 import cats.ApplicativeError
-import cats.data.Kleisli
-import cats.effect.Sync
 import cats.instances.int._
-import cats.syntax.applicative._
 import cats.syntax.applicativeError._
-import cats.syntax.apply._
 import cats.syntax.eq._
 import cats.syntax.functor._
 import cats.syntax.option._
 import com.azure.storage.blob.models.BlobStorageException
-import fs2.{Chunk, Stream}
 
 object handlers {
 
@@ -60,25 +54,9 @@ object handlers {
       case NonFatal(_) => None
     }
 
-  def raiseInnerStreamError[F[_]: Sync, A](
-      s: Stream[F,A])
-      : F[Stream[F, A]] =
-    s.compile.drain.handleErrorWith(_.raiseError[F, Unit]) *> s.pure[F]
-
-  def raiseInnerStreamErrorK[F[_]: Sync, A]: Kleisli[F, Stream[F, A], Stream[F, A]] =
-    Kleisli(raiseInnerStreamError[F, A])
-
   def recoverStorageException[F[_], A](fa: F[A])(implicit F: ApplicativeError[F, Throwable]): F[Option[A]] =
     F.recover(fa.map(_.some)) {
       case _: BlobStorageException => none
     }
-
-  def toByteStream[F[_]: Sync](s: Stream[F, ByteBuffer]): F[Stream[F, Byte]] =
-    Sync[F].delay {
-      s flatMap (buf => Stream.chunk(Chunk.byteBuffer(buf)))
-    }
-
-  def toByteStreamK[F[_]: Sync]: Kleisli[F, Stream[F, ByteBuffer], Stream[F, Byte]] =
-    Kleisli(toByteStream[F])
 
 }

@@ -26,6 +26,7 @@ import scala.{None, Some}
 
 import cats.data.Kleisli
 import cats.effect.{ConcurrentEffect, ContextShift}
+import cats.syntax.option._
 import com.azure.storage.blob.BlobContainerAsyncClient
 import com.azure.storage.blob.models.ListBlobsOptions
 
@@ -38,7 +39,7 @@ object AzureListService {
     toListBlobsOption map
       mkArgs andThen
       requests.listRequestK andThen
-      converters.toBlobstorePathsK
+      converters.toBlobstorePathsK.map(_.some)
 
 
   def mk[F[_]: ConcurrentEffect: ContextShift](containerClient: BlobContainerAsyncClient): ListService[F] =

@@ -17,17 +17,17 @@
 package quasar.blobstore.azure
 
 import java.nio.ByteBuffer
-import scala.Boolean
+import scala.{Boolean, Byte}
 import scala.Predef._
 
 import cats.data.Kleisli
 import cats.effect.{Async, ConcurrentEffect, ContextShift, Sync}
-import cats.syntax.applicative._
 import cats.syntax.flatMap._
+import cats.syntax.functor._
 import com.azure.core.http.rest.Response
 import com.azure.storage.blob._
 import com.azure.storage.blob.models._
-import fs2.Stream
+import fs2.{Chunk, Stream}
 import reactor.core.publisher.Flux
 
 object requests {
@@ -68,11 +68,12 @@ object requests {
 
   def downloadRequest[F[_]: ConcurrentEffect: ContextShift](
       args: DownloadArgs)
-      : F[Stream[F, ByteBuffer]] =
+      : F[Stream[F, Byte]] =
     Sync[F].delay(args.blobClient.download())
-      .flatMap(b => reactive.fluxToStream[F, ByteBuffer](b).pure[F])
+      .map(b => reactive.fluxToStream[F, ByteBuffer](b))
+      .map(_.flatMap(buf => Stream.chunk(Chunk.byteBuffer(buf))))
 
-  def downloadRequestK[F[_]: ConcurrentEffect: ContextShift]: Kleisli[F, DownloadArgs, Stream[F, ByteBuffer]] =
+  def downloadRequestK[F[_]: ConcurrentEffect: ContextShift]: Kleisli[F, DownloadArgs, Stream[F, Byte]] =
     Kleisli(downloadRequest[F])
 
   final case class ContainerPropsArgs(

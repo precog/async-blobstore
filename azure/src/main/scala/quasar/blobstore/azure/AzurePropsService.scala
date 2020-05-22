@@ -21,22 +21,30 @@ import quasar.blobstore.services.PropsService
 
 import cats.data.Kleisli
 import cats.effect.{Async, ContextShift}
-import cats.syntax.applicative._
+import cats.syntax.flatMap._
+import cats.syntax.functor._
 import com.azure.storage.blob.{BlobAsyncClient, BlobContainerAsyncClient}
 import com.azure.storage.blob.models.BlobProperties
+import scala.Option
 
 
 object AzurePropsService {
+
+  def fromBlobPropsArgs[F[_]: Async: ContextShift]
+      : Kleisli[F, BlobPropsArgs, Option[BlobProperties]] =
+    handlers.recoverToNone(
+      requests.blobPropsRequestK.map(_.getValue()))
+
   def apply[F[_]: Async: ContextShift](
       containerClient: BlobContainerAsyncClient,
       mkArgs: BlobAsyncClient => BlobPropsArgs)
-      : PropsService[F, BlobProperties] = {
-    val res = converters.blobPathToBlobClientK(containerClient) andThen
-      Kleisli[F, BlobAsyncClient, BlobPropsArgs](mkArgs(_).pure[F]) andThen
-      requests.blobPropsRequestK.map(_.getValue())
-
-    handlers.recoverToNone(res)
-  }
+      : PropsService[F, BlobProperties] =
+    Kleisli { blobPath =>
+      for {
+        blobClient <- converters.mkBlobClient[F](containerClient)(blobPath)
+        res <- fromBlobPropsArgs[F].run(BlobPropsArgs(blobClient, null))
+      } yield res
+    }
 
   def mk[F[_]: Async: ContextShift](containerClient: BlobContainerAsyncClient)
       : PropsService[F, BlobProperties] =

@@ -48,10 +48,22 @@ class AzurePropsServiceSpec extends EffectfulSpec {
         BlobPath(List(PathElem("testdata"), PathElem("lines.json"))),
         beSome)
 
+    "existing blobpath returns some (2)" >>*
+      assertProps[BlobProperties](
+        mkService(PublicConfig),
+        BlobPath(List(PathElem("prefix3"), PathElem("subprefix5"), PathElem("cars2.data"))),
+        beSome)
+
     "non existing blobpath returns none" >>*
       assertProps[BlobProperties](
         mkService(PublicConfig),
         BlobPath(List(PathElem("doesnotexist"))),
+        beNone)
+
+    "blobpath that only exists as prefix returns none" >>*
+      assertProps[BlobProperties](
+        mkService(PublicConfig),
+        BlobPath(List(PathElem("testdata"))),
         beNone)
 
     "nil blobpath returns none" >>*
