@@ -17,7 +17,6 @@
 package quasar.blobstore.azure
 
 import quasar.blobstore.azure.fixtures._
-import quasar.blobstore.azure.testImplicits._
 import quasar.blobstore.paths._
 import quasar.blobstore.services.GetService
 
@@ -26,15 +25,17 @@ import scala.{Array, Byte, None, Some, StringContext}
 import scala.collection.immutable.List
 
 import cats.effect._
+import cats.effect.testing.specs2.CatsIO
 import cats.syntax.applicative._
 import org.specs2.matcher.{Matcher, MatchResult}
+import org.specs2.mutable.Specification
 
-class AzureGetServiceSpec extends EffectfulSpec {
+class AzureGetServiceSpec extends Specification with CatsIO {
   import AzureGetServiceSpec._
 
   "get service" >> {
 
-    "existing blobpath returns expected bytes" >>* {
+    "existing blobpath returns expected bytes" in IO {
       val expected = "[1, 2]\n[3, 4]\n".getBytes(StandardCharsets.UTF_8)
 
       assertGet(
@@ -43,16 +44,17 @@ class AzureGetServiceSpec extends EffectfulSpec {
         be_===(expected))
     }
 
-    "non-existing blobpath returns none" >>*
+    "non-existing blobpath returns none" in IO {
       assertGetNone(
         mkService(PublicConfig),
         BlobPath(List(PathElem("testdata"), PathElem("notthere"))))
+    }
   }
 }
 
-object AzureGetServiceSpec extends EffectfulSpec {
+object AzureGetServiceSpec extends Specification {
 
-  def mkService(cfg: Config): IO[GetService[IO]] =
+  def mkService(cfg: Config)(implicit cs: ContextShift[IO]): IO[GetService[IO]] =
     Azure.mkContainerClient[IO](cfg) map (c => AzureGetService.mk[IO](c.value))
 
   def assertGet(

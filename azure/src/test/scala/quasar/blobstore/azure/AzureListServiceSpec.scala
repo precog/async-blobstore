@@ -17,18 +17,19 @@
 package quasar.blobstore.azure
 
 import quasar.blobstore.azure.fixtures._
-import quasar.blobstore.azure.testImplicits._
 import quasar.blobstore.paths._
 import quasar.blobstore.services.ListService
 
 import scala.{None, Some}
-
-import cats.effect._
-import cats.syntax.applicative._
-import org.specs2.matcher.{Matcher, MatchResult}
 import scala.collection.immutable.List
 
-class AzureListServiceSpec extends EffectfulSpec {
+import cats.effect._
+import cats.effect.testing.specs2.CatsIO
+import cats.syntax.applicative._
+import org.specs2.matcher.{Matcher, MatchResult}
+import org.specs2.mutable.Specification
+
+class AzureListServiceSpec extends Specification with CatsIO {
 
   def mkService(cfg: Config): IO[ListService[IO]] =
     Azure.mkContainerClient[IO](cfg) map (c => AzureListService.mk[IO](c.value))
@@ -47,7 +48,7 @@ class AzureListServiceSpec extends EffectfulSpec {
 
   "list service" >> {
 
-    "existing leaf prefix returns blobpaths" >>* {
+    "existing leaf prefix returns blobpaths" in IO {
       val expected = List[BlobstorePath](
         BlobPath(List(PathElem("prefix3"), PathElem("subprefix5"), PathElem("cars2.data"))))
 
@@ -57,7 +58,7 @@ class AzureListServiceSpec extends EffectfulSpec {
         be_===(expected))
     }
 
-    "existing non-leaf prefix returns prefixpaths and blobpaths" >>* {
+    "existing non-leaf prefix returns prefixpaths and blobpaths" in IO {
       val expected = List[BlobstorePath](
         BlobPath(List(PathElem("dir1"), PathElem("arrayProcessing.data"))),
         PrefixPath(List(PathElem("dir1"), PathElem("dir1"))),
@@ -69,7 +70,7 @@ class AzureListServiceSpec extends EffectfulSpec {
         be_===(expected))
     }
 
-    "non-existing prefix returns empty list" >>* {
+    "non-existing prefix returns empty list" in IO {
       val expected = List[BlobstorePath]()
 
       assertList(

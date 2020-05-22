@@ -17,7 +17,6 @@
 package quasar.blobstore.azure
 
 import quasar.blobstore.azure.fixtures._
-import quasar.blobstore.azure.testImplicits._
 import quasar.blobstore.paths.{BlobPath, PathElem}
 import quasar.blobstore.services.PropsService
 
@@ -25,11 +24,13 @@ import scala.Option
 import scala.collection.immutable.{List, Nil}
 
 import cats.effect._
+import cats.effect.testing.specs2.CatsIO
 import com.azure.storage.blob.models.BlobProperties
 import org.specs2.matcher.Matcher
 import org.specs2.matcher.MatchResult
+import org.specs2.mutable.Specification
 
-class AzurePropsServiceSpec extends EffectfulSpec {
+class AzurePropsServiceSpec extends Specification with CatsIO {
 
   def mkService(cfg: Config): IO[PropsService[IO, BlobProperties]] =
     Azure.mkContainerClient[IO](cfg) map (c => AzurePropsService.mk[IO](c.value))
@@ -42,52 +43,60 @@ class AzurePropsServiceSpec extends EffectfulSpec {
 
   "props service" >> {
 
-    "existing blobpath returns some" >>*
+    "existing blobpath returns some" in IO {
       assertProps[BlobProperties](
         mkService(PublicConfig),
         BlobPath(List(PathElem("testdata"), PathElem("lines.json"))),
         beSome)
+    }
 
-    "existing blobpath returns some (2)" >>*
+    "existing blobpath returns some (2)" in IO {
       assertProps[BlobProperties](
         mkService(PublicConfig),
         BlobPath(List(PathElem("prefix3"), PathElem("subprefix5"), PathElem("cars2.data"))),
         beSome)
+    }
 
-    "non existing blobpath returns none" >>*
+    "non existing blobpath returns none" in IO {
       assertProps[BlobProperties](
         mkService(PublicConfig),
         BlobPath(List(PathElem("doesnotexist"))),
         beNone)
+    }
 
-    "blobpath that only exists as prefix returns none" >>*
+    "blobpath that only exists as prefix returns none" in IO {
       assertProps[BlobProperties](
         mkService(PublicConfig),
         BlobPath(List(PathElem("testdata"))),
         beNone)
+    }
 
-    "nil blobpath returns none" >>*
+    "nil blobpath returns none" in IO {
       assertProps[BlobProperties](
         mkService(PublicConfig),
         BlobPath(Nil),
         beNone)
+    }
 
-    "empty string blobpath returns none" >>*
+    "empty string blobpath returns none" in IO {
       assertProps[BlobProperties](
         mkService(PublicConfig),
         BlobPath(List(PathElem(""))),
         beNone)
+    }
 
-    "blobpath in non existing container returns none" >>*
+    "blobpath in non existing container returns none" in IO {
       assertProps[BlobProperties](
         mkService(NonExistingConfig),
         BlobPath(List(PathElem("something"))),
         beNone)
+    }
 
-    "invalid container throws exception" >>*
+    "invalid container throws exception" in IO {
       assertProps[BlobProperties](
         mkService(InvalidConfig),
         BlobPath(List(PathElem("something"))),
         beNone)
+    }
   }
 }

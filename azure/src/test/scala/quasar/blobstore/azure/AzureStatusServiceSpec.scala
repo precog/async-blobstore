@@ -18,12 +18,13 @@ package quasar.blobstore.azure
 
 import quasar.blobstore.BlobstoreStatus
 import quasar.blobstore.azure.fixtures._
-import quasar.blobstore.azure.testImplicits._
 import quasar.blobstore.services.StatusService
 
 import cats.effect.IO
+import cats.effect.testing.specs2.CatsIO
+import org.specs2.mutable.Specification
 
-class AzureStatusServiceSpec extends EffectfulSpec {
+class AzureStatusServiceSpec extends Specification with CatsIO {
 
   def mkService(cfg: Config): IO[StatusService[IO]] =
     Azure.mkContainerClient[IO](cfg) map (c => AzureStatusService.mk[IO](c.value))
@@ -42,13 +43,16 @@ class AzureStatusServiceSpec extends EffectfulSpec {
 
   "status service" >> {
 
-    "valid, accessible, public container returns ok" >>*
+    "valid, accessible, public container returns ok" in IO {
       assertStatus(mkService(PublicConfig), BlobstoreStatus.ok())
+    }
 
-    "non existing container returns not found" >>*
+    "non existing container returns not found" in IO {
       assertStatus(mkService(NonExistingConfig), BlobstoreStatus.notFound())
+    }
 
-    "invalid container returns not ok" >>*
+    "invalid container returns not ok" in IO {
       assertStatusNotOk(mkService(InvalidConfig))
+    }
   }
 }
