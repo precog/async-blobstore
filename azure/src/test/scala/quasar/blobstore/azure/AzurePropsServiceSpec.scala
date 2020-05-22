@@ -92,7 +92,7 @@ class AzurePropsServiceSpec extends Specification with CatsIO {
         beNone)
     }
 
-    "invalid container throws exception" in IO {
+    "invalid container returns none" in IO {
       assertProps[BlobProperties](
         mkService(InvalidConfig),
         BlobPath(List(PathElem("something"))),
