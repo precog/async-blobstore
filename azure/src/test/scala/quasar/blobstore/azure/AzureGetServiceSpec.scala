@@ -35,7 +35,7 @@ class AzureGetServiceSpec extends Specification with CatsIO {
 
   "get service" >> {
 
-    "existing blobpath returns expected bytes" in IO {
+    "existing blobpath returns expected bytes" >> {
       val expected = "[1, 2]\n[3, 4]\n".getBytes(StandardCharsets.UTF_8)
 
       assertGet(
@@ -44,7 +44,7 @@ class AzureGetServiceSpec extends Specification with CatsIO {
         be_===(expected))
     }
 
-    "non-existing blobpath returns none" in IO {
+    "non-existing blobpath returns none" >> {
       assertGetNone(
         mkService(PublicConfig),
         BlobPath(List(PathElem("testdata"), PathElem("notthere"))))

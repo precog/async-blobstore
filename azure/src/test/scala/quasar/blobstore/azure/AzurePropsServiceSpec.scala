@@ -43,56 +43,56 @@ class AzurePropsServiceSpec extends Specification with CatsIO {
 
   "props service" >> {
 
-    "existing blobpath returns some" in IO {
+    "existing blobpath returns some" >> {
       assertProps[BlobProperties](
         mkService(PublicConfig),
         BlobPath(List(PathElem("testdata"), PathElem("lines.json"))),
         beSome)
     }
 
-    "existing blobpath returns some (2)" in IO {
+    "existing blobpath returns some (2)" >> {
       assertProps[BlobProperties](
         mkService(PublicConfig),
         BlobPath(List(PathElem("prefix3"), PathElem("subprefix5"), PathElem("cars2.data"))),
         beSome)
     }
 
-    "non existing blobpath returns none" in IO {
+    "non existing blobpath returns none" >> {
       assertProps[BlobProperties](
         mkService(PublicConfig),
         BlobPath(List(PathElem("doesnotexist"))),
         beNone)
     }
 
-    "blobpath that only exists as prefix returns none" in IO {
+    "blobpath that only exists as prefix returns none" >> {
       assertProps[BlobProperties](
         mkService(PublicConfig),
         BlobPath(List(PathElem("testdata"))),
         beNone)
     }
 
-    "nil blobpath returns none" in IO {
+    "nil blobpath returns none" >> {
       assertProps[BlobProperties](
         mkService(PublicConfig),
         BlobPath(Nil),
         beNone)
     }
 
-    "empty string blobpath returns none" in IO {
+    "empty string blobpath returns none" >> {
       assertProps[BlobProperties](
         mkService(PublicConfig),
         BlobPath(List(PathElem(""))),
         beNone)
     }
 
-    "blobpath in non existing container returns none" in IO {
+    "blobpath in non existing container returns none" >> {
       assertProps[BlobProperties](
         mkService(NonExistingConfig),
         BlobPath(List(PathElem("something"))),
         beNone)
     }
 
-    "invalid container returns none" in IO {
+    "invalid container returns none" >> {
       assertProps[BlobProperties](
         mkService(InvalidConfig),
         BlobPath(List(PathElem("something"))),

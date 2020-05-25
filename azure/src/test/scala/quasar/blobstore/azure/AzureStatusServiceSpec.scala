@@ -43,15 +43,15 @@ class AzureStatusServiceSpec extends Specification with CatsIO {
 
   "status service" >> {
 
-    "valid, accessible, public container returns ok" in IO {
+    "valid, accessible, public container returns ok" >> {
       assertStatus(mkService(PublicConfig), BlobstoreStatus.ok())
     }
 
-    "non existing container returns not found" in IO {
+    "non existing container returns not found" >> {
       assertStatus(mkService(NonExistingConfig), BlobstoreStatus.notFound())
     }
 
-    "invalid container returns not ok" in IO {
+    "invalid container returns not ok" >> {
       assertStatusNotOk(mkService(InvalidConfig))
     }
   }

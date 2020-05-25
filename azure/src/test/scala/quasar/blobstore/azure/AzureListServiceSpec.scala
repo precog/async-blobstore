@@ -48,7 +48,7 @@ class AzureListServiceSpec extends Specification with CatsIO {
 
   "list service" >> {
 
-    "existing leaf prefix returns blobpaths" in IO {
+    "existing leaf prefix returns blobpaths" >> {
       val expected = List[BlobstorePath](
         BlobPath(List(PathElem("prefix3"), PathElem("subprefix5"), PathElem("cars2.data"))))
 
@@ -58,7 +58,7 @@ class AzureListServiceSpec extends Specification with CatsIO {
         be_===(expected))
     }
 
-    "existing non-leaf prefix returns prefixpaths and blobpaths" in IO {
+    "existing non-leaf prefix returns prefixpaths and blobpaths" >> {
       val expected = List[BlobstorePath](
         BlobPath(List(PathElem("dir1"), PathElem("arrayProcessing.data"))),
         PrefixPath(List(PathElem("dir1"), PathElem("dir1"))),
@@ -70,7 +70,7 @@ class AzureListServiceSpec extends Specification with CatsIO {
         be_===(expected))
     }
 
-    "non-existing prefix returns empty list" in IO {
+    "non-existing prefix returns empty list" >> {
       val expected = List[BlobstorePath]()
 
       assertList(
