@@ -28,11 +28,12 @@ import cats._
 import cats.implicits._
 import cats.effect.{Async, ConcurrentEffect, ContextShift, Sync, Timer}
 import cats.effect.concurrent.Ref
-import com.azure.core.credential.{AccessToken, TokenRequestContext}
+import com.azure.core.credential.{AccessToken, TokenCredential, TokenRequestContext}
 import com.azure.identity.ClientSecretCredentialBuilder
 import com.azure.storage.blob._
 import com.azure.storage.common.StorageSharedKeyCredential
 import org.slf4s.Logging
+import reactor.core.publisher.Mono
 
 object Azure extends Logging {
 
@@ -69,7 +70,10 @@ object Azure extends Logging {
               .credential(new StorageSharedKeyCredential(accountName.value, accountKey.value))).pure[F]
         case ad @ AzureCredentials.ActiveDirectory(_, _, _) =>
           Functor[F].compose[Expires].map(getAccessToken[F](ad)) { token =>
-            builder.sasToken(token.getToken)
+            builder.credential(new TokenCredential {
+              def getToken(ctx: TokenRequestContext): Mono[AccessToken] =
+                Mono.just(token)
+            })
           }
       }
     }.flatten
