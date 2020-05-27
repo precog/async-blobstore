@@ -16,8 +16,9 @@ scmInfo in ThisBuild := Some(ScmInfo(
 val AwsSdkVersion = "2.9.1"
 val Fs2Version = "2.2.1"
 val MonixVersion = "3.0.0"
-// Make sure this is the same for different sub projectss
-val NettyVersion = "4.1.44.Final"
+// Make sure this is the same for different sub projects
+val NettyVersion = "4.1.49.Final"
+val SpecsVersion = "4.9.4"
 
 // Include to also publish a project's tests
 lazy val publishTestsSettings = Seq(
@@ -30,7 +31,6 @@ lazy val root = project
 
 lazy val core = project
   .in(file("core"))
-  .settings(addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"))
   .settings(
     name := "async-blobstore-core",
     libraryDependencies ++= Seq(
@@ -41,7 +41,6 @@ lazy val core = project
 lazy val s3 = project
   .in(file("s3"))
   .dependsOn(core)
-  .settings(addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"))
   .settings(
     name := "async-blobstore-s3",
     libraryDependencies ++= Seq(
@@ -54,13 +53,14 @@ lazy val s3 = project
 lazy val azure = project
   .in(file("azure"))
   .dependsOn(core)
-  .settings(addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"))
   .settings(
     name := "async-blobstore-azure",
     libraryDependencies ++= Seq(
       "ch.timo-schmid" %% "slf4s-api" % "1.7.26",
       "io.netty" % "netty-all" % NettyVersion,
-      "com.microsoft.azure" % "azure-storage-blob" % "10.5.0",
-      "com.azure" % "azure-identity" % "1.1.0-beta.3",
+      "com.azure" % "azure-storage-blob" % "12.6.1",
+      "com.azure" % "azure-identity" % "1.1.0-beta.4",
       "eu.timepit" %% "refined" % "0.9.9",
-      "io.reactivex.rxjava2" % "rxjava" % "2.2.2"))
+      "io.projectreactor" %% "reactor-scala-extensions" % "0.6.0",
+      "org.specs2" %% "specs2-core" % SpecsVersion % Test,
+      "com.codecommit" %% "cats-effect-testing-specs2" % "0.4.0"))

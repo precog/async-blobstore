@@ -16,36 +16,36 @@
 
 package quasar.blobstore.azure
 
-import quasar.blobstore.azure.requests.DownloadArgs
+import quasar.blobstore.azure.requests.{BlobPropsArgs, DownloadArgs}
 import quasar.blobstore.services.GetService
 
-import scala.Byte
+import scala.{Byte, None, Some}
 
 import cats.data.Kleisli
 import cats.effect.{ConcurrentEffect, ContextShift}
-import cats.syntax.applicative._
-import com.microsoft.azure.storage.blob._
-import com.microsoft.rest.v2.Context
+import cats.implicits._
+import com.azure.storage.blob.BlobContainerAsyncClient
 import fs2.Stream
 
 object AzureGetService {
 
-  def apply[F[_]: ConcurrentEffect: ContextShift](
-      containerURL: ContainerURL,
-      mkArgs: BlobURL => DownloadArgs,
-      reliableDownloadOptions: ReliableDownloadOptions,
-      maxQueueSize: MaxQueueSize)
+  def mk[F[_]: ConcurrentEffect: ContextShift](
+      containerClient: BlobContainerAsyncClient)
       : GetService[F] =
-    converters.blobPathToBlobURLK(containerURL) andThen
-      Kleisli[F, BlobURL, DownloadArgs](mkArgs(_).pure[F]) andThen
-      requests.downloadRequestK andThen
-      handlers.toByteStreamK(reliableDownloadOptions, maxQueueSize) mapF
-      handlers.recoverNotFound[F, Stream[F, Byte]]
+    Kleisli { blobPath =>
+      for {
+        blobClient <- converters.mkBlobClient[F](containerClient)(blobPath)
+        props <- AzurePropsService.fromBlobPropsArgs[F].apply(BlobPropsArgs(blobClient, null))
+        res <-
+          props match {
+            case None =>
+              none.pure[F]
+            case Some(_) =>
+              (requests.downloadRequestK[F] mapF
+                (handlers.recoverToNone[F, Stream[F, Byte]] _)
+              ).apply(DownloadArgs(blobClient))
+          }
+      } yield res
+    }
 
-  def mk[F[_]: ConcurrentEffect: ContextShift](containerURL: ContainerURL, maxQueueSize: MaxQueueSize): GetService[F] =
-    AzureGetService(
-      containerURL,
-      DownloadArgs(_, BlobRange.DEFAULT, BlobAccessConditions.NONE, false, Context.NONE),
-      new ReliableDownloadOptions,
-      maxQueueSize)
 }

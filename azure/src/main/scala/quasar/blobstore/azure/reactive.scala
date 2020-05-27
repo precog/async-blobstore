@@ -14,27 +14,27 @@
  * limitations under the License.
  */
 
-package quasar.blobstore
+package quasar.blobstore.azure
 
-import quasar.blobstore.paths.{BlobPath, BlobstorePath, PrefixPath}
-
-import scala.{Byte, Int, Option}
-
-import cats.data.Kleisli
+import cats.effect._
 import fs2.Stream
+import fs2.interop.reactivestreams._
+import reactor.core.publisher.{Flux, Mono}
+import reactor.core.scala.publisher.ScalaConverters._
 
-object services {
+object reactive {
 
-  type DeleteService[F[_]] = Kleisli[F, BlobPath, BlobstoreStatus]
+  def streamToFlux[F[_]: ConcurrentEffect, A](s: Stream[F, A]): Flux[A] =
+    Flux.from(s.toUnicastPublisher())
 
-  type GetService[F[_]] = Kleisli[F, BlobPath, Option[Stream[F, Byte]]]
+  def monoToAsync[F[_]: ContextShift, A](
+      mono: Mono[A])(
+      implicit F: Async[F])
+      : F[A] =
+    Async.fromFuture(F.delay(mono.asScala.toFuture))
 
-  type ListService[F[_]] = Kleisli[F, PrefixPath, Option[Stream[F, BlobstorePath]]]
-
-  type PropsService[F[_], P] = Kleisli[F, BlobPath, Option[P]]
-
-  type PutService[F[_]] = Kleisli[F, (BlobPath, Stream[F, Byte]), Int]
-
-  type StatusService[F[_]] = F[BlobstoreStatus]
-
+  def fluxToStream[F[_]: ConcurrentEffect: ContextShift, A](
+      flux: Flux[A])
+      : Stream[F, A] =
+    fromPublisher[F, A](flux)
 }
