@@ -45,7 +45,7 @@ lazy val s3 = project
     name := "async-blobstore-s3",
     libraryDependencies ++= Seq(
       "co.fs2" %% "fs2-core" % Fs2Version,
-      "io.netty" % "netty-all" % NettyVersion,
+      //"io.netty" % "netty-all" % NettyVersion,
       "io.monix" %% "monix-catnap" % MonixVersion,
       "software.amazon.awssdk" % "netty-nio-client" % AwsSdkVersion,
       "software.amazon.awssdk" % "s3" % AwsSdkVersion))
@@ -57,7 +57,7 @@ lazy val azure = project
     name := "async-blobstore-azure",
     libraryDependencies ++= Seq(
       "ch.timo-schmid" %% "slf4s-api" % "1.7.26",
-      "io.netty" % "netty-all" % NettyVersion,
+      //"io.netty" % "netty-all" % NettyVersion,
       "com.azure" % "azure-storage-blob" % "12.6.1",
       "com.azure" % "azure-identity" % "1.1.0-beta.4",
       "eu.timepit" %% "refined" % "0.9.9",
