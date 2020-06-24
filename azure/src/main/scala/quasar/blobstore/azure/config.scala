@@ -46,7 +46,7 @@ object AzureCredentials {
     clientSecret: ClientSecret) extends AzureCredentials
 }
 
-final class MaxQueueSize private (value: Int)
+final class MaxQueueSize private (val value: Int)
 
 object MaxQueueSize {
   def apply(value: Int): Option[MaxQueueSize] =
