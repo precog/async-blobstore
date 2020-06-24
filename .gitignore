@@ -1,6 +1,9 @@
 target/
 .targets/
 
+*.swo
+*.swp
+
 # sbt-slamdata common resources
 /scripts/bumpDependentProject
 /scripts/checkAndAutoMerge
