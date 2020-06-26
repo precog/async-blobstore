@@ -16,16 +16,12 @@
 
 package quasar.blobstore.azure
 
-import scala.{Int, Option, Product, Serializable}
+import scala.{Int, None, Option, Product, Serializable, Some}
 import scala.Predef.String
 
 import java.time.OffsetDateTime
 
 import cats._
-
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.auto._
-import eu.timepit.refined.numeric.Positive
 
 final case class ContainerName(value: String)
 final case class StorageUrl(value: String)
@@ -50,10 +46,16 @@ object AzureCredentials {
     clientSecret: ClientSecret) extends AzureCredentials
 }
 
-final case class MaxQueueSize(value: Int Refined Positive)
+final case class MaxQueueSize private (val value: Int)
 
 object MaxQueueSize {
-  def default: MaxQueueSize = MaxQueueSize(10)
+  def apply(value: Int): Option[MaxQueueSize] =
+    if (value > 0)
+      Some(new MaxQueueSize(value))
+    else
+      None
+
+  def default: MaxQueueSize = new MaxQueueSize(10)
 }
 
 final case class Expires[A](value: A, expiresAt: OffsetDateTime)
