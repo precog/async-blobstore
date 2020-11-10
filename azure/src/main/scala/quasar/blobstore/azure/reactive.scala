@@ -25,7 +25,7 @@ import reactor.core.scala.publisher.ScalaConverters._
 object reactive {
 
   def streamToFlux[F[_]: ConcurrentEffect, A](s: Stream[F, A]): Flux[A] =
-    Flux.from(s.toUnicastPublisher())
+    Flux.from(s.toUnicastPublisher)
 
   def monoToAsync[F[_]: ContextShift, A](
       mono: Mono[A])(
