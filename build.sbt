@@ -1,6 +1,6 @@
 import scala.collection.Seq
 
-ThisBuild / crossScalaVersions := Seq("2.12.10", "2.13.1")
+ThisBuild / crossScalaVersions := Seq("2.12.12", "2.13.3")
 ThisBuild / scalaVersion := (ThisBuild / crossScalaVersions).value.head
 
 ThisBuild / publishAsOSSProject := true
@@ -14,11 +14,11 @@ scmInfo in ThisBuild := Some(ScmInfo(
   "scm:git@github.com:precog/async-blobstore.git"))
 
 val AwsSdkVersion = "2.9.1"
-val Fs2Version = "2.2.1"
-val MonixVersion = "3.0.0"
+val Fs2Version = "2.4.5"
+val MonixVersion = "3.3.0"
 // Make sure this is the same for different sub projects
 val NettyVersion = "4.1.49.Final"
-val SpecsVersion = "4.9.4"
+val SpecsVersion = "4.10.5"
 
 // Include to also publish a project's tests
 lazy val publishTestsSettings = Seq(
@@ -62,4 +62,4 @@ lazy val azure = project
       "com.azure" % "azure-identity" % "1.1.0-beta.4",
       "io.projectreactor" %% "reactor-scala-extensions" % "0.6.0",
       "org.specs2" %% "specs2-core" % SpecsVersion % Test,
-      "com.codecommit" %% "cats-effect-testing-specs2" % "0.4.0"))
+      "com.codecommit" %% "cats-effect-testing-specs2" % "0.4.1"))
