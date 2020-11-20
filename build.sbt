@@ -58,8 +58,8 @@ lazy val azure = project
     libraryDependencies ++= Seq(
       "ch.timo-schmid" %% "slf4s-api" % "1.7.26",
       //"io.netty" % "netty-all" % NettyVersion,
-      "com.azure" % "azure-storage-blob" % "12.6.1",
-      "com.azure" % "azure-identity" % "1.1.0-beta.4",
+      "com.azure" % "azure-storage-blob" % "12.9.0",
+      "com.azure" % "azure-identity" % "1.2.0",
       "io.projectreactor" %% "reactor-scala-extensions" % "0.6.0",
       "org.specs2" %% "specs2-core" % SpecsVersion % Test,
-      "com.codecommit" %% "cats-effect-testing-specs2" % "0.4.1"))
+      "com.codecommit" %% "cats-effect-testing-specs2" % "0.4.1" % Test))

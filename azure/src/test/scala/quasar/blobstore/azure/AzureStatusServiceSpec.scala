@@ -22,7 +22,7 @@ import quasar.blobstore.services.StatusService
 
 import cats.effect.IO
 import cats.effect.testing.specs2.CatsIO
-import org.specs2.mutable.Specification
+import org.specs2.mutable.Specification 
 
 class AzureStatusServiceSpec extends Specification with CatsIO {
 
@@ -49,10 +49,6 @@ class AzureStatusServiceSpec extends Specification with CatsIO {
 
     "non existing container returns not found" >> {
       assertStatus(mkService(NonExistingConfig), BlobstoreStatus.notFound())
-    }
-
-    "invalid container returns not ok" >> {
-      assertStatusNotOk(mkService(InvalidConfig))
     }
   }
 }

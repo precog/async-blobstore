@@ -41,6 +41,7 @@ object converters {
     response.getStatusCode() match {
       case 200 => BlobstoreStatus.ok()
       case 202 => BlobstoreStatus.ok()
+      case 401 => BlobstoreStatus.noAccess()
       case 403 => BlobstoreStatus.noAccess()
       case 404 => BlobstoreStatus.notFound()
       case other => BlobstoreStatus.notOk(s"Azure returned status $other")
