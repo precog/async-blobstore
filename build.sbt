@@ -17,7 +17,7 @@ val AwsSdkVersion = "2.9.1"
 val Fs2Version = "2.4.5"
 val MonixVersion = "3.3.0"
 // Make sure this is the same for different sub projects
-val NettyVersion = "4.1.49.Final"
+val NettyVersion = "4.1.52.Final"
 val SpecsVersion = "4.10.5"
 
 // Include to also publish a project's tests
