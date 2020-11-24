@@ -33,9 +33,6 @@ import reactor.core.publisher.Flux
 
 object AzurePutService {
 
-  private val DefaultBlockSize = Int.box(10 * 1024 * 1024)
-  private val DefaultNumBuffers = Int.box(2)
-
   def apply[F[_]: ContextShift: ConcurrentEffect](
       containerClient: BlobContainerAsyncClient,
       mkArgs: (Flux[ByteBuffer], BlobAsyncClient) => UploadRequestArgs)
@@ -59,6 +56,6 @@ object AzurePutService {
         UploadRequestArgs(
           flux,
           blobClient,
-          new ParallelTransferOptions(DefaultBlockSize, DefaultNumBuffers, null),
+          new ParallelTransferOptions(),
           overwrite = true))
 }
