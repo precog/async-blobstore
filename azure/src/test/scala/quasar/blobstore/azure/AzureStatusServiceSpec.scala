@@ -51,7 +51,11 @@ class AzureStatusServiceSpec extends Specification with CatsIO {
       assertStatus(mkService(NonExistingConfig), BlobstoreStatus.notFound())
     }
 
-    "invalid container returns not ok" >> {
+    "wrong credentials returns no access" >> {
+      assertStatus(mkService(NoAccessConfig), BlobstoreStatus.noAccess())
+    }
+
+    "invalid config returns not ok" >> {
       assertStatusNotOk(mkService(InvalidConfig))
     }
   }

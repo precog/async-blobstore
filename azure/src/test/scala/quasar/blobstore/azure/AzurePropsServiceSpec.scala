@@ -92,7 +92,14 @@ class AzurePropsServiceSpec extends Specification with CatsIO {
         beNone)
     }
 
-    "invalid container returns none" >> {
+    "config with wrong credentials returns none" >> {
+      assertProps[BlobProperties](
+        mkService(NoAccessConfig),
+        BlobPath(List(PathElem("something"))),
+        beNone)
+    }
+
+    "invalid config returns none" >> {
       assertProps[BlobProperties](
         mkService(InvalidConfig),
         BlobPath(List(PathElem("something"))),

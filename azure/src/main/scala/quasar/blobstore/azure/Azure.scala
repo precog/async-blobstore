@@ -19,7 +19,7 @@ package quasar.blobstore.azure
 import quasar.blobstore.azure.AzureCredentials.ActiveDirectory
 import quasar.blobstore.CompatConverters.All._
 
-import java.time.{Duration, Instant}
+import java.time.Instant
 import scala._
 import scala.Predef._
 import scala.concurrent.duration.MILLISECONDS
@@ -47,7 +47,6 @@ object Azure extends Logging {
           .clientId(ad.clientId.value)
           .tenantId(ad.tenantId.value)
           .clientSecret(ad.clientSecret.value)
-          .tokenRefreshOffset(Duration.ofMinutes(60))
           .build()
           .getToken((new TokenRequestContext)
             .setScopes(List("https://storage.azure.com/.default").asJava))

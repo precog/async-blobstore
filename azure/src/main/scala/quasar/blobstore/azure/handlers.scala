@@ -28,12 +28,16 @@ import cats.syntax.applicativeError._
 import cats.syntax.eq._
 import cats.syntax.functor._
 import cats.syntax.option._
-import com.azure.storage.blob.models.BlobStorageException
+import com.azure.storage.blob.models.{BlobErrorCode, BlobStorageException}
 
 object handlers {
 
   def recoverToBlobstoreStatus[F[_]: ApplicativeError[?[_], Throwable]](fa: F[BlobstoreStatus]): F[BlobstoreStatus] =
     fa.recover {
+      case ex: BlobStorageException if ex.getStatusCode === 401 && ex.getErrorCode == BlobErrorCode.NO_AUTHENTICATION_INFORMATION =>
+        BlobstoreStatus.notFound()
+      case ex: BlobStorageException if ex.getStatusCode === 401 =>
+        BlobstoreStatus.noAccess()
       case ex: BlobStorageException if ex.getStatusCode === 403 =>
         BlobstoreStatus.noAccess()
       case ex: BlobStorageException if ex.getStatusCode === 404 =>

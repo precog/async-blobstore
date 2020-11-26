@@ -16,7 +16,7 @@
 
 package quasar.blobstore.azure
 
-import scala.None
+import scala.{None, Some}
 
 object fixtures {
 
@@ -39,10 +39,18 @@ object fixtures {
       val maxQueueSize = None
     }
 
-  val InvalidConfig =
+  val NoAccessConfig =
     new Config {
-      val containerName = ContainerName(" contains spaces ")
-      val credentials = None
+      val containerName = ContainerName("doesnotexist")
+      val credentials = Some(AzureCredentials.SharedKey(AccountNameSlamdata, AccountKey("nope")))
+      val storageUrl = StorageUrlSlamdata
+      val maxQueueSize = None
+    }
+
+    val InvalidConfig =
+    new Config {
+      val containerName = ContainerName("doesnotexist")
+      val credentials = Some(AzureCredentials.SharedKey(AccountName(""), AccountKey("")))
       val storageUrl = StorageUrlSlamdata
       val maxQueueSize = None
     }
