@@ -96,17 +96,16 @@ class GCSListServiceSpec extends Specification with CatsIO {
         be_===(expected))
     }
 
-    // "existing non-leaf prefix returns prefixpaths and blobpaths" >> {
-    //   val expected = List[BlobstorePath](
-    //     BlobPath(List(PathElem("dir1"), PathElem("arrayProcessing.data"))),
-    //     PrefixPath(List(PathElem("dir1"), PathElem("dir1"))),
-    //     PrefixPath(List(PathElem("dir1"), PathElem("dir2"))))
+    "existing non-leaf prefix returns prefixpaths and blobpaths" >> {
+      val expected = List[BlobstorePath](
+        PrefixPath(List(PathElem("somefolder"), PathElem("nested"))),
+        BlobPath(List(PathElem("somefolder"), PathElem("spacex-launches.json"))))
 
-    //   assertList(
-    //     mkListService(goodConfig, Bucket("precog-test-bucket")).use(a => IO(a)),
-    //     PrefixPath(List(PathElem("dir1"))),
-    //     be_===(expected))
-    // }
+      assertList(
+        mkListService(goodConfig, Bucket("bucket-8168b20d-a6f0-427f-a21b-232a2e8742e1")),
+        PrefixPath(List(PathElem("somefolder"))),
+        be_===(expected))
+    }
 
     // "non-existing prefix returns empty list" >> {
     //   val expected = List[BlobstorePath]()
