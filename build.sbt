@@ -17,6 +17,10 @@ val AwsSdkVersion = "2.15.34"
 val Fs2Version = "2.4.5"
 val MonixVersion = "3.3.0"
 val SpecsVersion = "4.10.5"
+val Http4sVersion = "0.21.20"
+val GoogleAuthLib = "0.25.0"
+val ArgonautVersion = "6.3.2"
+val Self4sVersion = "1.7.26"
 
 // Include to also publish a project's tests
 lazy val publishTestsSettings = Seq(
@@ -34,7 +38,12 @@ lazy val core = project
     libraryDependencies ++= Seq(
       "com.github.julien-truffaut" %% "monocle-core" % "1.6.0",
       "co.fs2" %% "fs2-core" % Fs2Version,
-      "co.fs2" %% "fs2-reactive-streams" % Fs2Version))
+      "co.fs2" %% "fs2-reactive-streams" % Fs2Version,
+      "org.http4s" %% "http4s-async-http-client" % Http4sVersion,
+      "org.http4s" %% "http4s-argonaut" % Http4sVersion,
+      "org.specs2" %% "specs2-core" % SpecsVersion % Test,
+      "ch.timo-schmid" %% "slf4s-api" % Self4sVersion,
+      "com.github.markusbernhardt"  % "proxy-vole" % "1.0.5"))
 
 lazy val s3 = project
   .in(file("s3"))
@@ -53,9 +62,21 @@ lazy val azure = project
   .settings(
     name := "async-blobstore-azure",
     libraryDependencies ++= Seq(
-      "ch.timo-schmid" %% "slf4s-api" % "1.7.26",
+      //"ch.timo-schmid" %% "slf4s-api" % "1.7.26",
       "com.azure" % "azure-storage-blob" % "12.9.0",
       "com.azure" % "azure-identity" % "1.2.0",
       "io.projectreactor" %% "reactor-scala-extensions" % "0.6.0",
-      "org.specs2" %% "specs2-core" % SpecsVersion % Test,
+      //"org.specs2" %% "specs2-core" % SpecsVersion % Test,
       "com.codecommit" %% "cats-effect-testing-specs2" % "0.4.1" % Test))
+
+lazy val gcs = project
+  .in(file("gcs"))
+  .dependsOn(core)
+  .settings(
+    name := "async-blobstore-gcs",
+    libraryDependencies ++= Seq(
+      "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthLib,
+      "io.argonaut" %% "argonaut" % ArgonautVersion,
+      "com.codecommit" %% "cats-effect-testing-specs2" % "0.4.1" % Test,
+      "io.projectreactor" %% "reactor-scala-extensions" % "0.6.0"
+  ))
