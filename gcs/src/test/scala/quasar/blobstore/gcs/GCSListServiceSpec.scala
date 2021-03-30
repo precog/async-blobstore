@@ -76,6 +76,7 @@ class GCSListServiceSpec extends Specification with CatsIO {
 
     "root returns blobpaths" >> {
       val expected = List[BlobstorePath](
+        PrefixPath(List(PathElem("somefolder"))),
         BlobPath(List(PathElem("zips.csv"))),
         BlobPath(List(PathElem("zips.json"))))
 

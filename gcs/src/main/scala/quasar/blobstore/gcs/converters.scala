@@ -16,14 +16,24 @@
 
 package quasar.blobstore.gcs
 
+import scala.Predef.String
+import scala.util.{Either, Left, Right}
+
 import quasar.blobstore.paths._
 import scala.collection.immutable.List
 import fs2._
 
 object converters {
-  def gcsFileToBlobPath(f: GCSFile): BlobstorePath =
-    BlobPath(List(PathElem(f.name)))
+  def stripDelim(s: String): Either[String, String] =
+    if (s.endsWith("/")) Right(s.substring(0, s.length - 1))
+    else Left(s)
+
+  def gcsFileToBlobstorePath(f: GCSFile): BlobstorePath =
+    stripDelim(f.name) match {
+      case Right(s) => PrefixPath(List(PathElem(s)))
+      case Left(s) => BlobPath(List(PathElem(s)))
+    }
 
   def gcsListingsToBlobstorePaths(l: GCSListings): Stream[Pure, BlobstorePath] =
-    Stream[Pure, BlobstorePath](l.list.map(gcsFileToBlobPath): _*)
+    Stream[Pure, BlobstorePath](l.list.map(gcsFileToBlobstorePath): _*)
 }

@@ -49,7 +49,7 @@ object GoogleCloudStorage extends Logging {
 
   def gcsListUrl(bucket: Bucket): Uri = {
     //TODO: fix this
-    val listUri = Uri.fromString("https://storage.googleapis.com/storage/v1/b/" + bucket.value + "/o").toOption.get
+    val listUri = Uri.unsafeFromString("https://storage.googleapis.com/storage/v1/b/" + bucket.value + "/o?delimiter=/&includeTrailingDelimiter=true") //.toOption.get
     listUri
   }
 
