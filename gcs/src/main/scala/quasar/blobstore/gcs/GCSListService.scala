@@ -36,6 +36,8 @@ import org.http4s.{
 import org.http4s.argonaut._
 import org.http4s.client.Client
 import org.slf4s.Logger
+import scala.util.Left
+import scala.util.Right
 
 object GCSListService {
 
@@ -86,10 +88,15 @@ object GCSListings {
   implicit val codecJsonGCSListings: CodecJson[GCSListings] =
     CodecJson(
       {(gcsl: GCSListings) => {
-        ("list" := gcsl) ->: jEmptyObject}
+        ("list" := gcsl) ->: jEmptyObject
+      }
       },{j => {
-        for {
-          list <- (j --\ "items").as[List[GCSFile]]
-        } yield GCSListings(list)
+        val items = (j --\ "items").either
+        items match {
+          case Left(value) => DecodeResult.ok(GCSListings(List.empty[GCSFile]))
+          case Right(value) => for {
+            list <- value.as[List[GCSFile]]
+          } yield GCSListings(list)
+        }
       }})
 }

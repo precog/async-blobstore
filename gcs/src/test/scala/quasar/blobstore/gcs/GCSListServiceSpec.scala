@@ -107,14 +107,14 @@ class GCSListServiceSpec extends Specification with CatsIO {
         be_===(expected))
     }
 
-    // "non-existing prefix returns empty list" >> {
-    //   val expected = List[BlobstorePath]()
+    "non-existing prefix returns empty list" >> {
+      val expected = List[BlobstorePath]()
 
-    //   assertList(
-    //     mkListService(goodConfig, Bucket("precog-test-bucket")).use(a => IO(a)),
-    //     PrefixPath(List(PathElem("does"), PathElem("not"), PathElem("exist"))),
-    //     be_===(expected))
-    // }
+      assertList(
+        mkListService(goodConfig, Bucket("precog-test-bucket")),
+        PrefixPath(List(PathElem("does"), PathElem("not"), PathElem("exist"))),
+        be_===(expected))
+    }
   }
 
 }
