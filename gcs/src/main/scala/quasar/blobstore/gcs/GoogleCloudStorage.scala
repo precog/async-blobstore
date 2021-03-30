@@ -32,18 +32,18 @@ import com.google.auth.oauth2.AccessToken
 
 object GoogleCloudStorage extends Logging {
 
-  def mkContainerClient[F[_]: Concurrent: ConcurrentEffect: ContextShift]: Resource[F, Client[F]] =
-    AsyncHttpClientBuilder[F]
+  def mkContainerClient[F[_]: Concurrent: ConcurrentEffect: ContextShift](cfg: GoogleAuthConfig): Resource[F, Client[F]] =
+    GCSClient(cfg)
 
   def gcsStatusUrl(bucket: Bucket): Uri = {
     //TODO: fix this
-    val statusUri = Uri.fromString("https://storage.googleapis.com/storage/v1/b/"+ bucket.value +"/iam").toOption.get 
+    val statusUri = Uri.fromString("https://storage.googleapis.com/storage/v1/b/"+ bucket.value +"/iam").toOption.get
     statusUri
   }
 
   def gcsDownloadUrl(bucket: Bucket, objectName: String): Uri = {
     //TODO: fix this
-    val downloadUri = Uri.fromString("https://storage.googleapis.com/storage/v1/b/" + bucket.value + "/o/" + objectName + "?alt=media").toOption.get 
+    val downloadUri = Uri.fromString("https://storage.googleapis.com/storage/v1/b/" + bucket.value + "/o/" + objectName + "?alt=media").toOption.get
     downloadUri
   }
 

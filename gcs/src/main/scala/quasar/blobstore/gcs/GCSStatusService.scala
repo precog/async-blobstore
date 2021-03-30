@@ -56,12 +56,12 @@ object GCSStatusService {
     import StatusResponse.statusResponseEntityDecoder
     import StatusResponseError.statusResponseErrorEntityDecoder
 
+    val statusUrl = GoogleCloudStorage.gcsStatusUrl(bucket)
+    val req = Request[F](Method.GET, statusUrl) //.withHeaders(bearerToken)
     for {
-      accessToken <- GoogleCloudStorage.getAccessToken(config.serviceAccountAuthBytes)
-      bearerToken = Authorization(Credentials.Token(AuthScheme.Bearer, accessToken.getTokenValue))
-      statusUrl <- GoogleCloudStorage.gcsStatusUrl(bucket).pure[F]
-      destReq = Request[F](Method.GET, statusUrl).withHeaders(bearerToken)
-      bucketStatus <- client.run(destReq).use[F, BlobstoreStatus] { resp =>
+      // accessToken <- GoogleCloudStorage.getAccessToken(config.serviceAccountAuthBytes)
+      // bearerToken = Authorization(Credentials.Token(AuthScheme.Bearer, accessToken.getTokenValue))
+      bucketStatus <- client.run(req).use[F, BlobstoreStatus] { resp =>
         resp.status match {
           case Status.Ok => BlobstoreStatus.ok().pure[F]
           case Status.Forbidden => BlobstoreStatus.notOk(s"Forbidden: ${resp.as[StatusResponseError]}").pure[F]
@@ -107,6 +107,6 @@ object StatusResponseError {
         message <- (j --\ "message").as[String]
       } yield StatusResponseError(code, message)
     }}
-  
+
   )
 }

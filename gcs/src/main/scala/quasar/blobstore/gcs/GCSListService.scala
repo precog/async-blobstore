@@ -16,99 +16,79 @@
 
 package quasar.blobstore.gcs
 
-import scala.Predef.println
+import quasar.blobstore.services.ListService
 
-import quasar.blobstore.paths.BlobstorePath
-import quasar.blobstore.paths.BlobPath
-//import quasar.blobstore.paths.Path
-import quasar.blobstore.paths.PathElem
-import quasar.blobstore.paths.PrefixPath
-
-import scala.{Option, Some, List}
+import scala.{Some, List}
 import scala.Predef.{String}
 
 import argonaut._, Argonaut._
-
-import quasar.blobstore.services.ListService
-//import quasar.blobstore.paths.PrefixPath
-
-//import cats.Applicative
 import cats.data.Kleisli
 import cats.effect.{ConcurrentEffect, Concurrent, ContextShift, Sync}
 import cats.implicits._
 
 import org.http4s.{
-  AuthScheme,
-  Credentials,
+  EntityDecoder,
   EntityEncoder,
   Method,
-  Request
+  Request,
+  Status
 }
-import org.http4s.client.Client
-import org.http4s.headers.{Authorization}
 import org.http4s.argonaut._
-import org.http4s.EntityDecoder
-
-import fs2.Stream
+import org.http4s.client.Client
+import org.slf4s.Logger
 
 object GCSListService {
 
   def apply[F[_]: Concurrent: ContextShift ](
-    client: Client[F],
-    bucket: Bucket,
-    config: GoogleAuthConfig): ListService[F] = Kleisli { prefixPath => {
+      log: Logger,
+      client: Client[F],
+      bucket: Bucket): ListService[F] = Kleisli { prefixPath =>
 
-      import GCSListings.gcsListingsErrorEntityDecoder
-      //import GCSListings.gcsListingsErrorEntityEncoder
+    import GCSListings.gcsListingsErrorEntityDecoder
+    //import GCSListings.gcsListingsErrorEntityEncoder
 
-      for {
-        accessToken <- GoogleCloudStorage.getAccessToken(config.serviceAccountAuthBytes)
-        _ = println("accessToken: " + accessToken)
-        bearerToken = Authorization(Credentials.Token(AuthScheme.Bearer, accessToken.getTokenValue))
-        _ = println("bearerToken: " + bearerToken)
-        listUrl <- GoogleCloudStorage.gcsListUrl(bucket).pure[F]
-        _ = println("listUrl: " + listUrl)
-        destReq = Request[F](Method.GET, listUrl).withHeaders(bearerToken)
-        _ = println("destReq: " + destReq)
-        x <- client.run(destReq).use {r => r.pure[F] }
-        // x <- client.run(destReq).use[F, Unit] { resp =>
-        //    resp.status match {
-        //      case Status.Ok => {println("resp status ok: " + resp.status); ().pure[F]} //resp.as[GCSListings]
-        //      case Status.Forbidden => println("resp forbidden: " + resp.status).pure[F]
-        //      case e => println("resp error: " + e.reason).pure[F]
-        //    }
-        // }
-        _ = println("STATUS: " + x.status)
-      //} yield Some(Stream[F, BlobstorePath](x.list))
-      } yield Some( Stream[F, BlobstorePath](BlobPath(List(PathElem("stuff")))) )
-      //Kleisli(PrefixPath => f)
-    }
+    val listUrl = GoogleCloudStorage.gcsListUrl(bucket)
+    val req = Request[F](Method.GET, listUrl)
+
+    for {
+      gcsListings <- client.run(req).use { resp =>
+
+        resp.status match {
+          case Status.Ok => resp.as[GCSListings]
+          case Status.Forbidden => scala.Predef.???
+          case _ => scala.Predef.???
+        }
+      }
+
+    } yield Some(converters.gcsListingsToBlobstorePaths(gcsListings))
   }
 
   def mk[F[_]: ConcurrentEffect: ContextShift](
-      client: Client[F], 
-      bucket: Bucket, 
-      config: GoogleAuthConfig)
-    : ListService[F] =
-    GCSListService[F](client, bucket, config)
+      log: Logger,
+      client: Client[F],
+      bucket: Bucket)
+      : ListService[F] =
+    GCSListService[F](log, client, bucket)
 
 }
 
 final case class GCSFile(name: String)
-final case class GCSListings(list: BlobstorePath)
+final case class GCSListings(list: List[GCSFile])
 
 object GCSListings {
-    implicit def gcsListingsErrorEntityDecoder[F[_]: Sync] : EntityDecoder[F, GCSListings] = jsonOf[F, GCSListings]
+  implicit def gcsListingsErrorEntityDecoder[F[_]: Sync]: EntityDecoder[F, GCSListings] = jsonOf[F, GCSListings]
   implicit def gcsListingsErrorEntityEncoder[F[_]: Sync]: EntityEncoder[F, GCSListings] = jsonEncoderOf[F, GCSListings]
 
-  implicit val codecPathElem: CodecJson[PathElem] = CodecJson.derive[PathElem]
+  implicit val codecGCSFile: CodecJson[GCSFile] =
+    casecodec1(GCSFile.apply, GCSFile.unapply)("name")
 
-  implicit val codecJsonGCSListings: CodecJson[GCSListings] = CodecJson(
-    {(gcsl: GCSListings) => {
-      ("list" := gcsl.list.path.map(x => x)) ->: jEmptyObject}
-    },{j => {
-      for {
-        list <- (j --\ "items").as[List[PathElem]]
-      } yield GCSListings(BlobPath(list))
-    }})
+  implicit val codecJsonGCSListings: CodecJson[GCSListings] =
+    CodecJson(
+      {(gcsl: GCSListings) => {
+        ("list" := gcsl) ->: jEmptyObject}
+      },{j => {
+        for {
+          list <- (j --\ "items").as[List[GCSFile]]
+        } yield GCSListings(list)
+      }})
 }

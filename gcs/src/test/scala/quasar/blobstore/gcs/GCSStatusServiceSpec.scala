@@ -48,7 +48,7 @@ class GCSStatusServiceSpec extends Specification with CatsIO {
   val goodConfig = googleAuthCfg.as[GoogleAuthConfig].toOption.get
 
   def mkStatusService(cfg: GoogleAuthConfig, bucket: Bucket): Resource[IO, StatusService[IO]] =
-    GoogleCloudStorage.mkContainerClient[IO].map(client => GCSStatusService(client, bucket, cfg))
+    GoogleCloudStorage.mkContainerClient[IO](cfg).map(client => GCSStatusService(client, bucket, cfg))
 
   def assertStatus(service: IO[BlobstoreStatus], status: BlobstoreStatus) =
     service.map(s => s must_=== status)
@@ -68,7 +68,7 @@ class GCSStatusServiceSpec extends Specification with CatsIO {
         BlobstoreStatus.ok())
     }
 
-    "non-exixtant container returns Not Found" >> {
+    "non-existant container returns Not Found" >> {
       assertStatus(
         mkStatusService(goodConfig, Bucket("nonexistantbucket")).use(a => a.map(b => b)),
         BlobstoreStatus.notOk("Error: Not Found") )

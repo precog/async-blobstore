@@ -32,6 +32,8 @@ import cats.effect.{IO, Resource}
 import cats.implicits._
 import cats.effect.testing.specs2.CatsIO
 
+import org.slf4s.Logger
+import org.slf4s.LoggerFactory
 import org.specs2.matcher.{Matcher, MatchResult}
 import org.specs2.mutable.Specification
 
@@ -41,6 +43,8 @@ import java.nio.charset.StandardCharsets.UTF_8
 class GCSListServiceSpec extends Specification with CatsIO {
 
   import GoogleAuthConfig.gbqConfigCodecJson
+
+  private val log: Logger = LoggerFactory("quasar.blobstore.gcs.GCSListServiceSpec")
 
   val AUTH_FILE="precog-ci-275718-9de94866bc77.json"
   val authCfgPath = Paths.get(getClass.getClassLoader.getResource(AUTH_FILE).toURI)
@@ -54,29 +58,42 @@ class GCSListServiceSpec extends Specification with CatsIO {
   val goodConfig = googleAuthCfg.as[GoogleAuthConfig].toOption.get
 
   def mkListService(cfg: GoogleAuthConfig, bucket: Bucket): Resource[IO, ListService[IO]] =
-    GoogleCloudStorage.mkContainerClient[IO].map(client => GCSListService(client, bucket, cfg))
+    GoogleCloudStorage.mkContainerClient[IO](cfg).map(client => GCSListService(log, client, bucket))
 
   def assertList(
-      service: IO[ListService[IO]],
+      service: Resource[IO, ListService[IO]],
       prefixPath: PrefixPath,
       matcher: Matcher[List[BlobstorePath]])
       : IO[MatchResult[List[BlobstorePath]]] =
-      service flatMap { svc => svc(prefixPath).flatMap {
+    service use { svc =>
+      svc(prefixPath).flatMap {
         case Some(value) => value.compile.toList.map(_ must matcher)
         case None => ko("Unexpected None").asInstanceOf[MatchResult[List[BlobstorePath]]].pure[IO]
-      }}
+      }
+    }
 
   "list service" >> {
 
-    "existing leaf prefix returns blobpaths" >> {
+    "root returns blobpaths" >> {
       val expected = List[BlobstorePath](
-        BlobPath(List(PathElem("prefix3"), PathElem("subprefix5"), PathElem("cars2.data"))))
+        BlobPath(List(PathElem("zips.csv"))),
+        BlobPath(List(PathElem("zips.json"))))
 
       assertList(
-        mkListService(goodConfig, Bucket("bucket-8168b20d-a6f0-427f-a21b-232a2e8742e1")).use(a => IO(a)),
-        PrefixPath(List(PathElem("prefix3"), PathElem("subprefix5"))),
+        mkListService(goodConfig, Bucket("bucket-8168b20d-a6f0-427f-a21b-232a2e8742e1")),
+        PrefixPath(List()),
         be_===(expected))
     }
+
+    // "existing leaf prefix returns blobpaths" >> {
+    //   val expected = List[BlobstorePath](
+    //     BlobPath(List(PathElem("prefix3"), PathElem("subprefix5"), PathElem("cars2.data"))))
+
+    //   assertList(
+    //     mkListService(goodConfig, Bucket("bucket-8168b20d-a6f0-427f-a21b-232a2e8742e1")),
+    //     PrefixPath(List(PathElem("prefix3"), PathElem("subprefix5"))),
+    //     be_===(expected))
+    // }
 
     // "existing non-leaf prefix returns prefixpaths and blobpaths" >> {
     //   val expected = List[BlobstorePath](

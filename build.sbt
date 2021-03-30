@@ -17,10 +17,11 @@ val AwsSdkVersion = "2.15.34"
 val Fs2Version = "2.4.5"
 val MonixVersion = "3.3.0"
 val SpecsVersion = "4.10.5"
-val Http4sVersion = "0.21.20"
+val Http4sVersion = "0.21.13"
 val GoogleAuthLib = "0.25.0"
 val ArgonautVersion = "6.3.2"
-val Self4sVersion = "1.7.26"
+val Slf4sVersion = "1.7.26"
+val Log4jVersion = "2.14.0"
 
 // Include to also publish a project's tests
 lazy val publishTestsSettings = Seq(
@@ -42,7 +43,7 @@ lazy val core = project
       "org.http4s" %% "http4s-async-http-client" % Http4sVersion,
       "org.http4s" %% "http4s-argonaut" % Http4sVersion,
       "org.specs2" %% "specs2-core" % SpecsVersion % Test,
-      "ch.timo-schmid" %% "slf4s-api" % Self4sVersion,
+      "ch.timo-schmid" %% "slf4s-api" % Slf4sVersion,
       "com.github.markusbernhardt"  % "proxy-vole" % "1.0.5"))
 
 lazy val s3 = project
@@ -78,5 +79,7 @@ lazy val gcs = project
       "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthLib,
       "io.argonaut" %% "argonaut" % ArgonautVersion,
       "com.codecommit" %% "cats-effect-testing-specs2" % "0.4.1" % Test,
+      "org.apache.logging.log4j" % "log4j-core" % Log4jVersion % Test,
+      "org.apache.logging.log4j" % "log4j-slf4j-impl" % Log4jVersion % Test,
       "io.projectreactor" %% "reactor-scala-extensions" % "0.6.0"
   ))
