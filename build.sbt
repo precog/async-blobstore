@@ -30,7 +30,7 @@ lazy val publishTestsSettings = Seq(
 lazy val root = project
   .in(file("."))
   .settings(noPublishSettings)
-  .aggregate(core, azure, s3)
+  .aggregate(core, azure, gcs, s3)
 
 lazy val core = project
   .in(file("core"))
