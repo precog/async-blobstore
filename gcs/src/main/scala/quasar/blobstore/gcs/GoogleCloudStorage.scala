@@ -19,16 +19,11 @@ package quasar.blobstore.gcs
 import scala.{Array, Byte}
 import scala.Predef.String
 
-import quasar.blobstore.AsyncHttpClientBuilder
-
-import org.slf4s.Logging
-
 import cats.effect.{Concurrent, ConcurrentEffect, ContextShift, Resource}
-
-import org.http4s.client.Client
-import org.http4s.Uri
-
 import com.google.auth.oauth2.AccessToken
+import org.http4s.Uri
+import org.http4s.client.Client
+import org.slf4s.Logging
 
 object GoogleCloudStorage extends Logging {
 

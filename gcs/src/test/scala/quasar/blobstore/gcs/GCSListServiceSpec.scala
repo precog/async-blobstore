@@ -24,7 +24,6 @@ import quasar.blobstore.paths.PrefixPath
 import quasar.blobstore.paths.BlobstorePath
 import quasar.blobstore.paths.BlobPath
 import quasar.blobstore.paths.PathElem
-import quasar.blobstore.paths.Path
 
 import argonaut._, Argonaut._
 
@@ -74,7 +73,7 @@ class GCSListServiceSpec extends Specification with CatsIO {
 
   "list service" >> {
 
-    "root returns blobpaths" >> {
+    "root returns prefixpaths and blobpaths" >> {
       val expected = List[BlobstorePath](
         PrefixPath(List(PathElem("somefolder"))),
         BlobPath(List(PathElem("zips.csv"))),
@@ -86,15 +85,16 @@ class GCSListServiceSpec extends Specification with CatsIO {
         be_===(expected))
     }
 
-    // "existing leaf prefix returns blobpaths" >> {
-    //   val expected = List[BlobstorePath](
-    //     BlobPath(List(PathElem("prefix3"), PathElem("subprefix5"), PathElem("cars2.data"))))
+    "existing leaf prefix returns blobpaths" >> {
+      val expected = List[BlobstorePath](
+        BlobPath(List(PathElem("somefolder"), PathElem("nested"), PathElem("false.boolean.json"))),
+        BlobPath(List(PathElem("somefolder"), PathElem("nested"), PathElem("int.number.json"))))
 
-    //   assertList(
-    //     mkListService(goodConfig, Bucket("bucket-8168b20d-a6f0-427f-a21b-232a2e8742e1")),
-    //     PrefixPath(List(PathElem("prefix3"), PathElem("subprefix5"))),
-    //     be_===(expected))
-    // }
+      assertList(
+        mkListService(goodConfig, Bucket("bucket-8168b20d-a6f0-427f-a21b-232a2e8742e1")),
+        PrefixPath(List(PathElem("somefolder"), PathElem("nested"))),
+        be_===(expected))
+    }
 
     // "existing non-leaf prefix returns prefixpaths and blobpaths" >> {
     //   val expected = List[BlobstorePath](

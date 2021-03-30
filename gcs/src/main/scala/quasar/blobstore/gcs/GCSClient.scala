@@ -34,7 +34,7 @@ object GCSClient {
   private val log: Logger = LoggerFactory("quasar.blobstore.gcs")
 
   private def traceLog[F[_]: Sync](s: String): F[Unit] =
-    Sync[F].delay(log.error(s)) // TODO: log.trace
+    Sync[F].delay(log.trace(s))
 
   private def http4sLogger[F[_]: Concurrent](client: Client[F]): Client[F] =
     ResponseLogger.apply(logHeaders = true, logBody = false, logAction = Some(traceLog[F](_)))(

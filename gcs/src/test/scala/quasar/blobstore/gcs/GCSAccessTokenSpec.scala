@@ -32,8 +32,6 @@ import org.specs2.mutable.Specification
 import scala.util.Left
 import scala.util.Right
 
-import com.google.auth.oauth2.AccessToken
-
 class GCSAccessTokenSpec extends Specification with CatsIO {
 
   import GoogleAuthConfig.gbqConfigCodecJson

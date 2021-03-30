@@ -24,20 +24,15 @@ import argonaut._, Argonaut._
 import quasar.blobstore.BlobstoreStatus
 import quasar.blobstore.services.StatusService
 
-import cats.effect.{Async, Concurrent, ConcurrentEffect, ContextShift, Sync}
+import cats.effect.{Concurrent, ContextShift, Sync}
 import cats.implicits._
 
 import org.http4s.{
-  AuthScheme,
-  Credentials,
   EntityEncoder,
-  MediaType,
   Method,
   Request,
-  Status,
-  Uri
+  Status
 }
-import org.http4s.headers.{Authorization, `Content-Type`, Location}
 import org.http4s.client.Client
 
 import org.http4s.argonaut._
@@ -49,18 +44,15 @@ import quasar.blobstore.services.StatusService
 object GCSStatusService {
 
   def apply[F[_]: Concurrent: ContextShift](
-    client: Client[F],
-    bucket: Bucket,
-    config: GoogleAuthConfig): StatusService[F] = {
+      client: Client[F],
+      bucket: Bucket,
+      config: GoogleAuthConfig): StatusService[F] = {
 
-    import StatusResponse.statusResponseEntityDecoder
     import StatusResponseError.statusResponseErrorEntityDecoder
 
     val statusUrl = GoogleCloudStorage.gcsStatusUrl(bucket)
-    val req = Request[F](Method.GET, statusUrl) //.withHeaders(bearerToken)
+    val req = Request[F](Method.GET, statusUrl)
     for {
-      // accessToken <- GoogleCloudStorage.getAccessToken(config.serviceAccountAuthBytes)
-      // bearerToken = Authorization(Credentials.Token(AuthScheme.Bearer, accessToken.getTokenValue))
       bucketStatus <- client.run(req).use[F, BlobstoreStatus] { resp =>
         resp.status match {
           case Status.Ok => BlobstoreStatus.ok().pure[F]

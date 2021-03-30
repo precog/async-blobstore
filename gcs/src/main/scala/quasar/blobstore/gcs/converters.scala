@@ -16,24 +16,41 @@
 
 package quasar.blobstore.gcs
 
-import scala.Predef.String
+import quasar.blobstore.paths._
+
+import scala.Boolean
+import scala.Predef.{genericArrayOps, String}
+import scala.collection.immutable.List
 import scala.util.{Either, Left, Right}
 
-import quasar.blobstore.paths._
-import scala.collection.immutable.List
+import cats.syntax.functor._
 import fs2._
 
 object converters {
+
+  def prefixPathToQueryParamValue(p: PrefixPath): String = {
+    val s = p.path.map(_.value).mkString("/")
+    if (s == "") s else s + "/"
+  }
+
   def stripDelim(s: String): Either[String, String] =
     if (s.endsWith("/")) Right(s.substring(0, s.length - 1))
     else Left(s)
 
   def gcsFileToBlobstorePath(f: GCSFile): BlobstorePath =
     stripDelim(f.name) match {
-      case Right(s) => PrefixPath(List(PathElem(s)))
-      case Left(s) => BlobPath(List(PathElem(s)))
+      case Right(s) => PrefixPath(toPath(s))
+      case Left(s) => BlobPath(toPath(s))
     }
 
-  def gcsListingsToBlobstorePaths(l: GCSListings): Stream[Pure, BlobstorePath] =
-    Stream[Pure, BlobstorePath](l.list.map(gcsFileToBlobstorePath): _*)
+  def gcsListingsToBlobstorePaths(l: GCSListings, exclude: BlobstorePath => Boolean): Stream[Pure, BlobstorePath] =
+    Stream[Pure, BlobstorePath](l.list.flatMap { f =>
+      val path = gcsFileToBlobstorePath(f)
+      if (exclude(path)) List.empty[BlobstorePath]
+      else List(path)
+    }: _*)
+
+  def toPath(s: String): Path =
+    s.split("""/""").map(PathElem(_)).view.toList
+
 }

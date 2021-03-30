@@ -48,7 +48,8 @@ object GCSListService {
     //import GCSListings.gcsListingsErrorEntityEncoder
 
     val listUrl = GoogleCloudStorage.gcsListUrl(bucket)
-    val req = Request[F](Method.GET, listUrl)
+    val prefix = converters.prefixPathToQueryParamValue(prefixPath)
+    val req = Request[F](Method.GET, listUrl.withQueryParam("prefix", prefix))
 
     for {
       gcsListings <- client.run(req).use { resp =>
@@ -60,7 +61,7 @@ object GCSListService {
         }
       }
 
-    } yield Some(converters.gcsListingsToBlobstorePaths(gcsListings))
+    } yield Some(converters.gcsListingsToBlobstorePaths(gcsListings, _ == converters.gcsFileToBlobstorePath(GCSFile(prefix))))
   }
 
   def mk[F[_]: ConcurrentEffect: ContextShift](
