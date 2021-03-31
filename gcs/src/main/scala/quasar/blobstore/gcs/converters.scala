@@ -53,4 +53,9 @@ object converters {
   def toPath(s: String): Path =
     s.split("""/""").map(PathElem(_)).view.toList
 
+  def blobPathToString(blobPath: BlobPath): String = {
+    val names = blobPath.path.map(_.value)
+    names.mkString("/")
+  }
+
 }

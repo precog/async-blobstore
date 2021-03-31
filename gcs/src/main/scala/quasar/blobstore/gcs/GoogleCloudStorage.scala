@@ -48,9 +48,15 @@ object GoogleCloudStorage extends Logging {
     listUri
   }
 
-    def gcsGetUrl(bucket: Bucket, objectName: String): Uri = {
+  def gcsGetUrl(bucket: Bucket, objectName: String): Uri = {
     //TODO: fix this
     val listUri = Uri.fromString("https://storage.googleapis.com/storage/v1/b/" + bucket.value + "/o/" + objectName + "?alt=media").toOption.get
+    listUri
+  }
+
+  def gcsPropsUrl(bucket: Bucket, objectName: String): Uri = {
+    //TODO: fix this
+    val listUri = Uri.fromString("https://storage.googleapis.com/storage/v1/b/" + bucket.value + "/o/" + objectName).toOption.get
     listUri
   }
 
