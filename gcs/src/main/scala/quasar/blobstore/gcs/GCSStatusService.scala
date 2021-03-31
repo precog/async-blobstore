@@ -56,7 +56,7 @@ object GCSStatusService {
       bucketStatus <- client.run(req).use[F, BlobstoreStatus] { resp =>
         resp.status match {
           case Status.Ok => BlobstoreStatus.ok().pure[F]
-          case Status.Forbidden => BlobstoreStatus.notOk(s"Forbidden: ${resp.as[StatusResponseError]}").pure[F]
+          case Status.Forbidden => BlobstoreStatus.noAccess().pure[F]
           case e => BlobstoreStatus.notOk(s"Error: ${e.reason}").pure[F]
         }
       }
