@@ -19,10 +19,10 @@ package quasar.blobstore.gcs
 import scala._
 import scala.Predef._
 
+import quasar.blobstore.gcs.GCSFileProperties._
 import quasar.blobstore.services.PropsService
 import quasar.blobstore.paths.BlobPath
 import quasar.blobstore.paths.PathElem
-import quasar.blobstore.gcs.GCSFileProperties.GCSFileProperties
 
 import argonaut._, Argonaut._
 

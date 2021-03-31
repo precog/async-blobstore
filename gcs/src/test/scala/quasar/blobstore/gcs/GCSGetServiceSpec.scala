@@ -23,7 +23,7 @@ import argonaut._, Argonaut._
 
 import quasar.blobstore.paths.BlobPath
 import quasar.blobstore.paths.PathElem
-import quasar.blobstore.services.GetService
+import quasar.blobstore.services.GetServiceResource
 
 import cats.effect.{IO, Resource}
 import cats.effect.testing.specs2.CatsIO
@@ -54,30 +54,30 @@ class GCSGetServiceSpec extends Specification with CatsIO {
   val googleAuthCfg = Json.obj("authCfg" := authCfgJson)
   val goodConfig = googleAuthCfg.as[GoogleAuthConfig].toOption.get
 
-  def mkGetService(cfg: GoogleAuthConfig, bucket: Bucket): Resource[IO, GetService[IO]] =
+  def mkGetService(cfg: GoogleAuthConfig, bucket: Bucket): Resource[IO, GetServiceResource[IO]] =
     GoogleCloudStorage.mkContainerClient[IO](cfg).map(client => GCSGetService.mk[IO](log, client, bucket))
 
   def assertGet(
-      service: Resource[IO, GetService[IO]],
+      service: Resource[IO, GetServiceResource[IO]],
       blobPath: BlobPath,
       matcher: Matcher[Array[Byte]])
       : IO[MatchResult[Array[Byte]]] =
     service use { svc =>
-      svc(blobPath).flatMap {
-        case Some(s) => s.compile.to(Array).map(_ must matcher)
+      svc(blobPath).use {
+        case Some(s) => s.compile.to(Array).map {x => println("downloaded: " + new java.lang.String(x)); x}.map(_ must matcher)
         case None => ko("Unexpected None").asInstanceOf[MatchResult[Array[Byte]]].pure[IO]
       }
     }
 
-  def assertGetNone(
-      service: IO[GetService[IO]],
-      blobPath: BlobPath) =
-    service flatMap { svc =>
-      svc(blobPath).map {
-        case Some(s) => ko(s"Unexpected Some: $s")
-        case None => ok
-      }
-    }
+  // def assertGetNone(
+  //     service: IO[GetServiceResource[IO]],
+  //     blobPath: BlobPath) =
+  //   service flatMap { svc =>
+  //     svc(blobPath).map {
+  //       case Some(s) => ko(s"Unexpected Some: $s")
+  //       case None => ok
+  //     }
+  //   }
 
     "get service" >> {
 

@@ -16,18 +16,19 @@
 
 package quasar.blobstore.gcs
 
-import quasar.blobstore.services.GetService
+import quasar.blobstore.services.GetServiceResource
 
-import cats.effect.{ConcurrentEffect, ContextShift}
+import scala.{Byte, Some}
+
 import cats.data.Kleisli
+import cats.effect.{ConcurrentEffect, ContextShift}
 import cats.implicits._
-
+import fs2.Stream
 import org.http4s.{
   Method,
   Request
 }
 import org.http4s.client.Client
-
 import org.slf4s.Logger
 
 object GCSGetService {
@@ -36,14 +37,12 @@ object GCSGetService {
       log: Logger,
       client: Client[F],
       bucket: Bucket)
-      : GetService[F] = Kleisli { blobPath =>
+      : GetServiceResource[F] = Kleisli { blobPath =>
 
     val filepath = converters.blobPathToString(blobPath)
     val downloadUrl = GoogleCloudStorage.gcsDownloadUrl(bucket, filepath)
     val req = Request[F](Method.GET, downloadUrl.withQueryParam("prefix", filepath))
 
-    for {
-      res <- client.run(req).use { resp => resp.body.pure[F] }
-    } yield res.some
+    client.run(req).evalMap[F, Stream[F, Byte]](_.body.pure[F]).map(Some(_))
   }
 }

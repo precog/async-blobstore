@@ -21,6 +21,7 @@ import quasar.blobstore.paths.{BlobPath, BlobstorePath, PrefixPath}
 import scala.{Byte, Int, Option}
 
 import cats.data.Kleisli
+import cats.effect.Resource
 import fs2.Stream
 
 object services {
@@ -28,6 +29,7 @@ object services {
   type DeleteService[F[_]] = Kleisli[F, BlobPath, BlobstoreStatus]
 
   type GetService[F[_]] = Kleisli[F, BlobPath, Option[Stream[F, Byte]]]
+  type GetServiceResource[F[_]] = Kleisli[Resource[F, *], BlobPath, Option[Stream[F, Byte]]]
 
   type ListService[F[_]] = Kleisli[F, PrefixPath, Option[Stream[F, BlobstorePath]]]
 
