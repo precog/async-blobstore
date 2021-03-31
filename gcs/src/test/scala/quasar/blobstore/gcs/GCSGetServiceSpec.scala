@@ -69,15 +69,15 @@ class GCSGetServiceSpec extends Specification with CatsIO {
       }
     }
 
-  // def assertGetNone(
-  //     service: IO[GetServiceResource[IO]],
-  //     blobPath: BlobPath) =
-  //   service flatMap { svc =>
-  //     svc(blobPath).map {
-  //       case Some(s) => ko(s"Unexpected Some: $s")
-  //       case None => ok
-  //     }
-  //   }
+  def assertGetNone(
+      service: Resource[IO, GetServiceResource[IO]],
+      blobPath: BlobPath) =
+    service flatMap { svc =>
+      svc(blobPath).map {
+        case Some(s) => s.compile.to(Array).map(a => {println("array: " + a.map(_.toChar).mkString ); a.isEmpty must_=== true}) //ko(s"Unexpected Some: $s")
+        case None => ko("Unexpected None").asInstanceOf[MatchResult[Array[Byte]]].pure[IO]
+      }
+    }
 
     "get service" >> {
 
@@ -90,11 +90,12 @@ class GCSGetServiceSpec extends Specification with CatsIO {
             be_===(expected))
         }
 
-    //   "non-existing blobpath returns none" >> {
-    //     assertGetNone(
-    //       mkService(PublicConfig),
-    //       BlobPath(List(PathElem("testdata"), PathElem("notthere"))))
-    //     }
+      "non-existing blobpath returns none" >> {
+
+        assertGetNone(
+          mkGetService(goodConfig, Bucket("bucket-8168b20d-a6f0-427f-a21b-232a2e8742e1")),
+          BlobPath(List(PathElem("testdata"), PathElem("notthere"))))
+        }
 
     }
 

@@ -19,7 +19,6 @@ package quasar.blobstore.gcs
 import quasar.blobstore.services.GetServiceResource
 
 import scala.{Byte, Some}
-import scala.Predef.println
 
 import cats.data.Kleisli
 import cats.effect.{ConcurrentEffect, ContextShift}
@@ -27,7 +26,8 @@ import cats.implicits._
 import fs2.Stream
 import org.http4s.{
   Method,
-  Request
+  Request,
+  Status
 }
 import org.http4s.client.Client
 import org.slf4s.Logger
@@ -42,10 +42,13 @@ object GCSGetService {
 
     val filepath = converters.blobPathToString(blobPath)
     val downloadUrl = GoogleCloudStorage.gcsDownloadUrl(bucket, filepath)
-    println("download url: " + downloadUrl)
     val req = Request[F](Method.GET, downloadUrl)
-    println("req: " + req)
 
-    client.run(req).evalMap[F, Stream[F, Byte]](_.body.pure[F]).map(Some(_))
+    client.run(req).evalMap[F, Stream[F, Byte]] {resp => {
+      resp.status match {
+        case Status.Ok => resp.body.pure[F]
+        case _ => Stream[F, Byte]().pure[F]
+      }
+    }}.map(Some(_))
   }
 }
