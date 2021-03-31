@@ -64,7 +64,7 @@ class GCSGetServiceSpec extends Specification with CatsIO {
       : IO[MatchResult[Array[Byte]]] =
     service use { svc =>
       svc(blobPath).use {
-        case Some(s) => s.compile.to(Array).map {x => println("downloaded: " + new java.lang.String(x)); x}.map(_ must matcher)
+        case Some(s) => s.compile.to(Array).map(_ must matcher)
         case None => ko("Unexpected None").asInstanceOf[MatchResult[Array[Byte]]].pure[IO]
       }
     }
@@ -82,7 +82,7 @@ class GCSGetServiceSpec extends Specification with CatsIO {
     "get service" >> {
 
       "existing blobpath returns expected bytes" >> {
-        val expected = "42".getBytes(UTF_8)
+        val expected = "42\n".getBytes(UTF_8)
 
         assertGet(
             mkGetService(goodConfig, Bucket("bucket-8168b20d-a6f0-427f-a21b-232a2e8742e1")),
