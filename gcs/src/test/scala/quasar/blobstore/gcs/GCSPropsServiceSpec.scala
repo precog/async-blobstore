@@ -40,7 +40,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 object GCSPropsServiceSpec extends Specification with CatsIO {
 
-  private val log: Logger = LoggerFactory("quasar.blobstore.gcs.GCSListServiceSpec")
+  private val log: Logger = LoggerFactory("quasar.blobstore.gcs.GCSPropsServiceSpec")
 
   val AUTH_FILE="precog-ci-275718-9de94866bc77.json"
   val authCfgPath = Paths.get(getClass.getClassLoader.getResource(AUTH_FILE).toURI)

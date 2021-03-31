@@ -16,8 +16,6 @@
 
 package quasar.blobstore.gcs
 
-import scala.Predef.println
-
 import quasar.blobstore.services.GetService
 
 import cats.effect.{ConcurrentEffect, ContextShift}
@@ -25,33 +23,27 @@ import cats.data.Kleisli
 import cats.implicits._
 
 import org.http4s.{
-  AuthScheme,
-  Credentials,
   Method,
   Request
 }
 import org.http4s.client.Client
-import org.http4s.headers.{Authorization}
+
+import org.slf4s.Logger
 
 object GCSGetService {
 
   def mk[F[_]: ConcurrentEffect: ContextShift](
+      log: Logger,
       client: Client[F],
-      bucket: Bucket,
-      config: GoogleAuthConfig)
-      : GetService[F] =
-    Kleisli { blobPath =>
-      for {
-        accessToken <- GoogleCloudStorage.getAccessToken(config.serviceAccountAuthBytes)
-        _ = println("accessToken: " + accessToken)
-        bearerToken = Authorization(Credentials.Token(AuthScheme.Bearer, accessToken.getTokenValue))
-        _ = println("bearerToken: " + bearerToken)
-        // Get file listings and use them in the gcsGetUrl
-        listUrl <- GoogleCloudStorage.gcsGetUrl(bucket, "stuff").pure[F]
-        _ = println("listUrl: " + listUrl)
-        destReq = Request[F](Method.GET, listUrl).withHeaders(bearerToken)
-        _ = println("destReq: " + destReq)
-        x <- client.run(destReq).use {r => r.pure[F] }
-      } yield x.body.some
-    }
+      bucket: Bucket)
+      : GetService[F] = Kleisli { blobPath =>
+
+    val filepath = converters.blobPathToString(blobPath)
+    val downloadUrl = GoogleCloudStorage.gcsDownloadUrl(bucket, filepath)
+    val req = Request[F](Method.GET, downloadUrl.withQueryParam("prefix", filepath))
+
+    for {
+      res <- client.run(req).use { resp => resp.body.pure[F] }
+    } yield res.some
+  }
 }
