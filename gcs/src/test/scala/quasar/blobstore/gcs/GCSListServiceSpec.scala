@@ -115,6 +115,16 @@ class GCSListServiceSpec extends Specification with CatsIO {
         PrefixPath(List(PathElem("does"), PathElem("not"), PathElem("exist"))),
         be_===(expected))
     }
+
+    // TODO: still fails not sure how to catch and match the thrown error
+    "non-existing bucket returns proper error " >> {
+      val expected = GCSError.GCSAccessError("Not Found")
+      assertList(
+       mkListService(goodConfig, Bucket("non-existing-bucket")),
+       PrefixPath(List(PathElem("does"), PathElem("not"), PathElem("exist"))),
+       throwA(expected))
+    }
+
   }
 
 }

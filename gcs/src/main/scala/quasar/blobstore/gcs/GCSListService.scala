@@ -19,9 +19,10 @@ package quasar.blobstore.gcs
 import quasar.blobstore.services.ListService
 
 import scala.{Some, List}
-import scala.Predef.{String}
+import scala.Predef.String
 
 import argonaut._, Argonaut._
+
 import cats.data.Kleisli
 import cats.effect.{ConcurrentEffect, Concurrent, ContextShift, Sync}
 import cats.implicits._
@@ -35,19 +36,23 @@ import org.http4s.{
 }
 import org.http4s.argonaut._
 import org.http4s.client.Client
+
 import org.slf4s.Logger
+
 import scala.util.Left
 import scala.util.Right
 
+import java.lang.RuntimeException
+
 object GCSListService {
 
-  def apply[F[_]: Concurrent: ContextShift ](
+  def apply[F[_]: Concurrent: ContextShift](
       log: Logger,
       client: Client[F],
       bucket: Bucket): ListService[F] = Kleisli { prefixPath =>
 
     import GCSListings.gcsListingsErrorEntityDecoder
-    //import GCSListings.gcsListingsErrorEntityEncoder
+    import GCSError._
 
     val listUrl = GoogleCloudStorage.gcsListUrl(bucket)
     val prefix = converters.prefixPathToQueryParamValue(prefixPath)
@@ -55,15 +60,19 @@ object GCSListService {
 
     for {
       gcsListings <- client.run(req).use { resp =>
-
         resp.status match {
-          case Status.Ok => resp.as[GCSListings]
-          case Status.Forbidden => scala.Predef.???
-          case _ => scala.Predef.???
+          case Status.Ok => resp.as[GCSListings].map(_.asRight[GCSAccessError])
+          case Status.Forbidden => resp.as[GCSAccessError].map(_.asLeft[GCSListings])
+          case _ => resp.as[GCSAccessError].map(_.asLeft[GCSListings])
         }
       }
 
-    } yield Some(converters.gcsListingsToBlobstorePaths(gcsListings, _ == converters.gcsFileToBlobstorePath(GCSFile(prefix))))
+    } yield {
+      gcsListings match {
+        case Left(value) => Some(fs2.Stream.raiseError[F](value))
+        case Right(value) => Some(converters.gcsListingsToBlobstorePaths(value, _ == converters.gcsFileToBlobstorePath(GCSFile(prefix))))
+      }
+    }
   }
 
   def mk[F[_]: ConcurrentEffect: ContextShift](
@@ -77,6 +86,23 @@ object GCSListService {
 
 final case class GCSFile(name: String)
 final case class GCSListings(list: List[GCSFile])
+
+object GCSError {
+  final case class GCSAccessError(message: String) extends RuntimeException(message)
+
+  implicit def gcsAccessErrorEntityDecoder[F[_]: Sync]: EntityDecoder[F, GCSAccessError] = jsonOf[F, GCSAccessError]
+  implicit def gcsAccessErrorEntityEncoder[F[_]: Sync]: EntityEncoder[F, GCSAccessError] = jsonEncoderOf[F, GCSAccessError]
+
+  implicit val codecJsonGCSListings: CodecJson[GCSAccessError] = CodecJson(
+    {(gae: GCSAccessError) =>
+      ("message" := gae.getMessage) ->: jEmptyObject
+    }, {j => {
+        for {
+          message <- (j --\ "error" --\ "message").as[String]
+        } yield GCSAccessError(message)
+      }
+    })
+}
 
 object GCSListings {
   implicit def gcsListingsErrorEntityDecoder[F[_]: Sync]: EntityDecoder[F, GCSListings] = jsonOf[F, GCSListings]
