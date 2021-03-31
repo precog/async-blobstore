@@ -55,7 +55,7 @@ object converters {
 
   def blobPathToString(blobPath: BlobPath): String = {
     val names = blobPath.path.map(_.value)
-    names.mkString("/")
+    names.mkString("%2F")
   }
 
 }
