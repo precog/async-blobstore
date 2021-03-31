@@ -48,7 +48,7 @@ object GCSStatusService {
       bucket: Bucket,
       config: GoogleAuthConfig): StatusService[F] = {
 
-    import StatusResponseError.statusResponseErrorEntityDecoder
+    // import StatusResponseError.statusResponseErrorEntityDecoder
 
     val statusUrl = GoogleCloudStorage.gcsStatusUrl(bucket)
     val req = Request[F](Method.GET, statusUrl)
