@@ -37,7 +37,7 @@ class GCSStatusServiceSpec extends Specification with CatsIO {
   import GoogleAuthConfig.gbqConfigCodecJson
 
   val AUTH_FILE="precog-ci-275718-9de94866bc77.json"
-  val BAD_AUTH_FILE="bad-auth-file.json"
+  //val BAD_AUTH_FILE="bad-auth-file.json"
 
   def getConfig(authFileName: String): GoogleAuthConfig = {
     val authCfgPath = Paths.get(getClass.getClassLoader.getResource(authFileName).toURI)

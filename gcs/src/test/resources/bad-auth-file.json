@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "bogus-project",
+  "private_key_id": "1th94865bc778d73f06ae66655acecb37j63bk68",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQClexF+d4wb0A/9\nxT24MwQhbHdaEibbxsZCcxLw2wOeNwTLw9SvLi712En0a3jtadfCqf1R9YogwyLa\np6tmeslFmBpUq1iGEvM8ZzSfxyPWD6L/gk5/BLtSg3Le45iXE3AVcCosFuRwaKf6\nkhcUmrqSb54sJWBiXFhVDxgjfobaq/4kmjt/+/3QDml6NAv7LhfQekOb17G84RR1\ngYpPYK/h1gdDAeACx9mXR34Qwa7zBe3hfaD3js1PP3gmcd6IgL/61jajagm+sxD8\nGV8JVYrNzz7wqP6VKFWM6xFWwT+zWeRS9FRB6j8n5MlXVogqqN6ayc+5YsC3G7fP\n5LhzyZAHAgMBAAECggEARKsmrce3BN2YnTKJs5O7/ZCwkFhi9qVsJSvyaq8/t5pW\nK6ZGbjFofE02Fy633jEjPxziSW3uVT0UjA6y4hJGzlHZb1QxJmXbuK+NF1aASPZx\nKb0tjKjugMWaV+KzMdH3m3XRkj0nq3vKZQDVgg/ZJyYZSXFzJy3x284pMqVxGXFF\n4o7VzPcx3RvUHwRjBVtbbrMhxrgUYyLjHDTe5nXqdmtKDms+ol6lXBcoIA2mhVzp\nb5XGHrc24pyQ7KrHG8SJswO8lrSSBuYfyqu/9FsQFJBj/fBfvczQNj2zAEU+JAMU\n/OBlOOckT2X/lV+lKo6CkKAFctcH4FEwdnmdJVVLRQKBgQDTPaQDtDj24lPEzN+C\nb9K9I1RLSMnvd1bblU7a4x+UVzfHg4bOyMOPgHkTQlLfow+Z/N2DiTYoDKsPSTuH\nfFTzcKyWJjUqbBYdA5oAe1IbDFy0lah06MX7HvLlu8yxzdqlvCxmErcA3NT098Lu\nNs7TnedUhpKpgd/RRyR39oD60wKBgQDIi0KE2vNEaeErejAEl8/TxNAUER/LNlbs\nBRMp6lG7c6u6p9++BW01SI45ygssfqS9WIjPc4Bqd1Kx4/WvzioGXrTkLksMRryc\n6KeO8C9O1NRpBRGzhy/a+QFI7GIINMFP2BA/UKM3rhKtYnM/VoepPRZitzrxpnTx\nT5Z+R2gtfQKBgQDQNS14SSbskOAoVhbnpfh9XFk1ayU+1s3R2TTEIqF5wQ3FpSo2\nn0PCKcss5G5y53H1QXvErnWmu/XPN0tpm27QE/rIdBhrG+Yf6vDcELE439JwXCKS\nOO0LO9IGBjkX9+LPAM5yPXgLbZ6pZZvI2FS72COu+IWOdeh5ijmz1FAE6QKBgAQ+\nhkLfi2R4RS6xYFDIkbpuoOS71Att8/r8xIIPlnk8IndJ1D9mSABnr7LjZscjSwNC\n22pgjGg0bEidhXaaC2OlH3jwzd/No3JCrkElLish7/jlBZHiG44r1O4hKpX339t7\nvCRK5ZlpErYerke54hcf1thx/kpc9n6g65NymW7VAoGAbPPDquiGBVoFlx9fdoiD\n/Yl0sD2zPLqh2HZ0+qXZdkhFEZasmAELVg+M20Cqh8KWxzJHtlwCqvqI57LJxMin\nCDFGPavWqQPgXhb4D8MgK7Hlvs4jSiYkl5Rj3Qn+1aI5OPxHPaH+y/yFz4u0yEED\nc+BsTXMakrpss9GV4VdePLc=\n-----END PRIVATE KEY-----\n",
+  "client_email": "read-bucket-sa@bogus-project.iam.gserviceaccount.com",
+  "client_id": "2224241115051675330430",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/read-bucket-sa%40bogus-project.iam.gserviceaccount.com"
+}

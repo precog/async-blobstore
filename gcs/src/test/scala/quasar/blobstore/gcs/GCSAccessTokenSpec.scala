@@ -36,7 +36,7 @@ class GCSAccessTokenSpec extends Specification with CatsIO {
 
   import GoogleAuthConfig.gbqConfigCodecJson
 
-  val AUTH_FILE="precog-ci-275718-087094ee66ba.json"
+  val AUTH_FILE="precog-ci-275718-9de94866bc77.json"
   val authCfgPath = Paths.get(getClass.getClassLoader.getResource(AUTH_FILE).toURI)
   val authCfgString = new String(Files.readAllBytes(authCfgPath), UTF_8)
   val authCfgJson: Json = Parse.parse(authCfgString) match {
