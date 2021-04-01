@@ -65,7 +65,7 @@ jobs:
       - run: $SBT ++${{ matrix.scala }} ci
 
       - name: Compress target directories
-        run: tar cf targets.tar target azure/target s3/target core/target project/target
+        run: tar cf targets.tar s3/target gcs/target target azure/target core/target project/target
 
       - name: Upload target directories
         uses: actions/upload-artifact@v2
