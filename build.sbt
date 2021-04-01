@@ -85,6 +85,4 @@ lazy val gcs = project
       "io.argonaut" %% "argonaut" % ArgonautVersion,
       "com.codecommit" %% "cats-effect-testing-specs2" % "0.4.1" % Test,
       "org.apache.logging.log4j" % "log4j-core" % Log4jVersion % Test,
-      "org.apache.logging.log4j" % "log4j-slf4j-impl" % Log4jVersion % Test,
-      "io.projectreactor" %% "reactor-scala-extensions" % "0.6.0"
-  ))
+      "org.apache.logging.log4j" % "log4j-slf4j-impl" % Log4jVersion % Test))

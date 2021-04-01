@@ -37,13 +37,14 @@ import scala.{
   List,
   Option
 }
-import scala.collection.JavaConverters._
+import quasar.blobstore.CompatConverters.All._
 
 import java.net.{InetSocketAddress, ProxySelector}
 import java.net.Proxy
 import java.net.Proxy.{Type => ProxyType}
 import java.util.concurrent.{Executors, ThreadFactory}
 import java.util.concurrent.atomic.AtomicInteger
+
 
 object AsyncHttpClientBuilder extends Logging {
   def apply[F[_]: ConcurrentEffect]: Resource[F, Client[F]] =
