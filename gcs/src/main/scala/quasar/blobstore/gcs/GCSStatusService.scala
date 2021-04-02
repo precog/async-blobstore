@@ -22,7 +22,6 @@ import scala.Predef._
 import argonaut._, Argonaut._
 
 import quasar.blobstore.BlobstoreStatus
-import quasar.blobstore.services.StatusService
 
 import cats.effect.{Concurrent, ContextShift, Sync}
 import cats.implicits._
@@ -36,7 +35,6 @@ import org.http4s.{
 import org.http4s.client.Client
 
 import org.http4s.argonaut._
-import org.http4s.client._
 import org.http4s.EntityDecoder
 
 import quasar.blobstore.services.StatusService

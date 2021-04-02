@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package quasar.blobstore
+package quasar.blobstore.gcs
 
 import scala.Predef._
 

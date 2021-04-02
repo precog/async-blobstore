@@ -16,8 +16,6 @@
 
 package quasar.blobstore.gcs
 
-import quasar.blobstore.AsyncHttpClientBuilder
-
 import scala._
 import scala.Predef._
 

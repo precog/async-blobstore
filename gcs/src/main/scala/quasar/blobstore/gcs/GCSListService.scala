@@ -114,7 +114,7 @@ object GCSListings {
   implicit val codecJsonGCSListings: CodecJson[GCSListings] =
     CodecJson(
       {(gcsl: GCSListings) => {
-        ("list" := gcsl) ->: jEmptyObject
+        ("list" := gcsl.list) ->: jEmptyObject
       }
       },{j => {
         val items = (j --\ "items").either

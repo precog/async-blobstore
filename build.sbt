@@ -45,11 +45,11 @@ lazy val core = project
       "com.github.julien-truffaut" %% "monocle-core" % "1.6.0",
       "co.fs2" %% "fs2-core" % Fs2Version,
       "co.fs2" %% "fs2-reactive-streams" % Fs2Version,
-      "org.http4s" %% "http4s-async-http-client" % Http4sVersion,
-      "org.http4s" %% "http4s-argonaut" % Http4sVersion,
+      //"org.http4s" %% "http4s-async-http-client" % Http4sVersion,
+      //"org.http4s" %% "http4s-argonaut" % Http4sVersion,
       "org.specs2" %% "specs2-core" % SpecsVersion % Test,
-      "ch.timo-schmid" %% "slf4s-api" % Slf4sVersion,
-      "com.github.markusbernhardt"  % "proxy-vole" % "1.0.5"))
+      "ch.timo-schmid" %% "slf4s-api" % Slf4sVersion))
+      //"com.github.markusbernhardt"  % "proxy-vole" % "1.0.5"))
 
 lazy val s3 = project
   .in(file("s3"))
@@ -82,7 +82,10 @@ lazy val gcs = project
     name := "async-blobstore-gcs",
     libraryDependencies ++= Seq(
       "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthLib,
-      "io.argonaut" %% "argonaut" % ArgonautVersion,
       "com.codecommit" %% "cats-effect-testing-specs2" % "0.4.1" % Test,
+      "io.argonaut" %% "argonaut" % ArgonautVersion,
       "org.apache.logging.log4j" % "log4j-core" % Log4jVersion % Test,
-      "org.apache.logging.log4j" % "log4j-slf4j-impl" % Log4jVersion % Test))
+      "org.apache.logging.log4j" % "log4j-slf4j-impl" % Log4jVersion % Test,
+      "org.http4s" %% "http4s-async-http-client" % Http4sVersion,
+      "org.http4s" %% "http4s-argonaut" % Http4sVersion,
+      "com.github.markusbernhardt"  % "proxy-vole" % "1.0.5"))
