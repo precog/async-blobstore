@@ -19,7 +19,7 @@ package quasar.blobstore.gcs
 import quasar.blobstore.services.ListService
 
 import scala.{Some, List}
-import scala.Predef.String
+import scala.Predef.{String, println}
 
 import argonaut._, Argonaut._
 
@@ -56,6 +56,7 @@ object GCSListService {
 
     val listUrl = GoogleCloudStorage.gcsListUrl(bucket)
     val prefix = converters.prefixPathToQueryParamValue(prefixPath)
+    println("prefix: " + prefix)
     val req = Request[F](Method.GET, listUrl.withQueryParam("prefix", prefix))
 
     for {
