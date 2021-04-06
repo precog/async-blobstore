@@ -20,6 +20,7 @@ import quasar.blobstore.services.ListService
 
 import scala.{Some, List}
 import scala.Predef.{String, println}
+import scala.util.{Left, Right}
 
 import argonaut._, Argonaut._
 
@@ -36,13 +37,7 @@ import org.http4s.{
 }
 import org.http4s.argonaut._
 import org.http4s.client.Client
-
 import org.slf4s.Logger
-
-import scala.util.Left
-import scala.util.Right
-
-import java.lang.RuntimeException
 
 object GCSListService {
 
@@ -51,8 +46,7 @@ object GCSListService {
       client: Client[F],
       bucket: Bucket): ListService[F] = Kleisli { prefixPath =>
 
-    import GCSListings.gcsListingsErrorEntityDecoder
-    import GCSError._
+    import GCSListings._
 
     val listUrl = GoogleCloudStorage.gcsListUrl(bucket)
     val prefix = converters.prefixPathToQueryParamValue(prefixPath)
@@ -88,26 +82,10 @@ object GCSListService {
 final case class GCSFile(name: String)
 final case class GCSListings(list: List[GCSFile])
 
-object GCSError {
-  final case class GCSAccessError(message: String) extends RuntimeException(message)
-
-  implicit def gcsAccessErrorEntityDecoder[F[_]: Sync]: EntityDecoder[F, GCSAccessError] = jsonOf[F, GCSAccessError]
-  implicit def gcsAccessErrorEntityEncoder[F[_]: Sync]: EntityEncoder[F, GCSAccessError] = jsonEncoderOf[F, GCSAccessError]
-
-  implicit val codecJsonGCSListings: CodecJson[GCSAccessError] = CodecJson(
-    {(gae: GCSAccessError) =>
-      ("message" := gae.getMessage) ->: jEmptyObject
-    }, {j => {
-        for {
-          message <- (j --\ "error" --\ "message").as[String]
-        } yield GCSAccessError(message)
-      }
-    })
-}
-
 object GCSListings {
-  implicit def gcsListingsErrorEntityDecoder[F[_]: Sync]: EntityDecoder[F, GCSListings] = jsonOf[F, GCSListings]
-  implicit def gcsListingsErrorEntityEncoder[F[_]: Sync]: EntityEncoder[F, GCSListings] = jsonEncoderOf[F, GCSListings]
+
+  implicit def gcsListingsEntityDecoder[F[_]: Sync]: EntityDecoder[F, GCSListings] = jsonOf[F, GCSListings]
+  implicit def gcsListingsEntityEncoder[F[_]: Sync]: EntityEncoder[F, GCSListings] = jsonEncoderOf[F, GCSListings]
 
   implicit val codecGCSFile: CodecJson[GCSFile] =
     casecodec1(GCSFile.apply, GCSFile.unapply)("name")

@@ -27,7 +27,6 @@ import quasar.blobstore.paths.PathElem
 import argonaut._, Argonaut._
 
 import cats.effect.{IO, Resource}
-import cats.implicits._
 import cats.effect.testing.specs2.CatsIO
 
 import org.slf4s.Logger

@@ -18,15 +18,13 @@ package quasar.blobstore.gcs
 
 import quasar.blobstore.services.PropsService
 
-import scala.{Int, None, Option, Some}
+import scala.{Int, Some}
 import scala.Predef.String
 
 import argonaut._, Argonaut._
-
 import cats.data.Kleisli
 import cats.effect.{Concurrent, ConcurrentEffect, ContextShift, Sync}
 import cats.implicits._
-
 
 import org.http4s.{
   EntityDecoder,
@@ -37,16 +35,11 @@ import org.http4s.{
 }
 import org.http4s.argonaut._
 import org.http4s.client.Client
-
-import scala.util.Left
-import scala.util.Right
-
 import org.slf4s.Logger
 
 object GCSPropsService {
 
   import GCSFileProperties._
-  import GCSError._
 
   def apply[F[_]: Concurrent: ContextShift](
       log: Logger,
