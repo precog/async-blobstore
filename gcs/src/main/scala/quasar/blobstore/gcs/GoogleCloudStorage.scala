@@ -27,43 +27,33 @@ import org.slf4s.Logging
 
 object GoogleCloudStorage extends Logging {
 
-
   def mkContainerClient[F[_]: Concurrent: ConcurrentEffect: ContextShift](cfg: GoogleAuthConfig): Resource[F, Client[F]] =
     GCSClient(cfg)
 
-  def gcsStatusUrl(bucket: Bucket): Uri = {
-    //TODO: fix this
-    // val statusUri = Uri.fromString("https://storage.googleapis.com/storage/v1/b/"+ bucket.value +"/iam").toOption.get
-    Uri.unsafeFromString("https://storage.googleapis.com/storage/v1/b/")
+  private def bucketUrl(bucket: Bucket) =
+    Uri.unsafeFromString("https://storage.googleapis.com/storage/v1/b")
       .addSegment(bucket.value)
+
+  def gcsStatusUrl(bucket: Bucket): Uri =
+    bucketUrl(bucket)
       .addSegment("iam")
 
-    // statusUri
-  }
+  def gcsDownloadUrl(bucket: Bucket, objectName: String): Uri =
+    bucketUrl(bucket)
+      .addSegment("o")
+      .addSegment(objectName)
+      .withQueryParam("alt", "media")
 
-  def gcsDownloadUrl(bucket: Bucket, objectName: String): Uri = {
-    //TODO: fix this
-    val downloadUri = Uri.fromString("https://storage.googleapis.com/storage/v1/b/" + bucket.value + "/o/" + objectName + "?alt=media").toOption.get
-    downloadUri
-  }
+  def gcsListUrl(bucket: Bucket): Uri =
+    bucketUrl(bucket)
+      .addSegment("o")
+      .withQueryParam("delimiter", "/")
+      .withQueryParam("includeTrailingDelimiter", "true")
 
-  def gcsListUrl(bucket: Bucket): Uri = {
-    //TODO: fix this
-    val listUri = Uri.unsafeFromString("https://storage.googleapis.com/storage/v1/b/" + bucket.value + "/o?delimiter=/&includeTrailingDelimiter=true") //.toOption.get
-    listUri
-  }
-
-  def gcsGetUrl(bucket: Bucket, objectName: String): Uri = {
-    //TODO: fix this
-    val listUri = Uri.fromString("https://storage.googleapis.com/storage/v1/b/" + bucket.value + "/o/" + objectName + "?alt=media").toOption.get
-    listUri
-  }
-
-  def gcsPropsUrl(bucket: Bucket, objectName: String): Uri = {
-    //TODO: fix this
-    val listUri = Uri.fromString("https://storage.googleapis.com/storage/v1/b/" + bucket.value + "/o/" + objectName).toOption.get
-    listUri
-  }
+  def gcsPropsUrl(bucket: Bucket, objectName: String): Uri =
+    bucketUrl(bucket)
+      .addSegment("o")
+      .addSegment(objectName)
 
   def getAccessToken[F[_]: Concurrent: ContextShift](auth: Array[Byte]): F[Option[AccessToken]] = GCSAccessToken.token(auth)
 }
