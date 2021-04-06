@@ -18,7 +18,7 @@ package quasar.blobstore.gcs
 
 import quasar.blobstore.services.PropsService
 
-import scala.{Int, None}
+import scala.{Int, None, Option, Some}
 import scala.Predef.String
 
 import argonaut._, Argonaut._
@@ -48,7 +48,6 @@ object GCSPropsService {
   import GCSFileProperties._
   import GCSError._
 
- 
   def apply[F[_]: Concurrent: ContextShift](
       log: Logger,
       client: Client[F],
@@ -58,21 +57,14 @@ object GCSPropsService {
     val listUrl = GoogleCloudStorage.gcsPropsUrl(bucket, prefix)
     val req = Request[F](Method.GET, listUrl.withQueryParam("prefix", prefix))
 
-    for {
-      gcsProps <- client.run(req).use { resp =>
+    val resp: F[scala.Option[GCSFileProperties]] = client.run(req).use { resp =>
         resp.status match {
-          case Status.Ok => resp.as[GCSFileProperties].map(_.asRight[GCSAccessError])
-          case Status.Forbidden => resp.as[GCSAccessError].map(_.asLeft[GCSFileProperties])
-          case _ => resp.as[GCSAccessError].map(_.asLeft[GCSFileProperties])
+          case Status.Ok => resp.as[GCSFileProperties].map(Some(_))
+          case _ => none[GCSFileProperties].pure[F]
         }
       }
 
-    } yield {
-      gcsProps match {
-        case Left(value) => None
-        case Right(value) => value.some
-      }
-    }
+    handlers.recoverToNone(resp)
   }
 
   def mk[F[_]: ConcurrentEffect: ContextShift](

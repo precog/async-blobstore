@@ -59,7 +59,7 @@ object GCSPropsServiceSpec extends Specification with CatsIO {
   val goodConfig = getConfig(AUTH_FILE)
   val badConfig = getConfig(BAD_AUTH_FILE)
   val bucketName = "precog-test-bucket"
- 
+
   def mkService(cfg: GoogleAuthConfig, bucket: Bucket): Resource[IO, PropsService[IO, GCSFileProperties]] =
     GoogleCloudStorage.mkContainerClient[IO](cfg).map(client => GCSPropsService(log, client, bucket))
 
@@ -76,7 +76,7 @@ object GCSPropsServiceSpec extends Specification with CatsIO {
     "existing file returns correct props" >> {
       assertProps[GCSFileProperties](
         mkService(goodConfig, Bucket(bucketName)),
-        BlobPath(List(PathElem("zips.csv"))),
+        BlobPath(List(PathElem("extraSmallZips.data"))),
         beSome)
     }
 
@@ -121,7 +121,7 @@ object GCSPropsServiceSpec extends Specification with CatsIO {
         mkService(goodConfig, Bucket("non-existing-bucket")),
         BlobPath(List(PathElem("something"))),
         beNone)
-    } 
+    }
 
     "invalid config returns none" >> {
       assertProps[GCSFileProperties](
