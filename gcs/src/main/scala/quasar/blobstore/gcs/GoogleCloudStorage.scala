@@ -16,6 +16,7 @@
 
 package quasar.blobstore.gcs
 
+import java.lang.RuntimeException
 import scala.{Array, Byte, Option}
 import scala.Predef.String
 
@@ -26,6 +27,8 @@ import org.http4s.client.Client
 import org.slf4s.Logging
 
 object GoogleCloudStorage extends Logging {
+
+  final case class GCSAccessError(message: String) extends RuntimeException(message)
 
   def mkContainerClient[F[_]: Concurrent: ConcurrentEffect: ContextShift](cfg: GoogleAuthConfig): Resource[F, Client[F]] =
     GCSClient(cfg)

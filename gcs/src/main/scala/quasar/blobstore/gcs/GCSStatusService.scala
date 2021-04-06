@@ -46,19 +46,20 @@ object GCSStatusService {
       bucket: Bucket,
       config: GoogleAuthConfig): StatusService[F] = {
 
-    // import StatusResponseError.statusResponseErrorEntityDecoder
-
     val statusUrl = GoogleCloudStorage.gcsStatusUrl(bucket)
     val req = Request[F](Method.GET, statusUrl)
-    for {
+    val res = for {
       bucketStatus <- client.run(req).use[F, BlobstoreStatus] { resp =>
         resp.status match {
           case Status.Ok => BlobstoreStatus.ok().pure[F]
+          case Status.NotFound => BlobstoreStatus.notFound().pure[F]
           case Status.Forbidden => BlobstoreStatus.noAccess().pure[F]
           case e => BlobstoreStatus.notOk(s"Error: ${e.reason}").pure[F]
         }
       }
     } yield bucketStatus
+
+    handlers.recoverToBlobstoreStatus(res)
   }
 }
 

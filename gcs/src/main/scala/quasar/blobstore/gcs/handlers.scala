@@ -16,6 +16,8 @@
 
 package quasar.blobstore.gcs
 
+import quasar.blobstore.BlobstoreStatus
+
 import java.lang.Throwable
 import scala.{None, Option}
 import scala.util.control.NonFatal
@@ -29,4 +31,16 @@ object handlers {
     fa.recover {
       case NonFatal(_) => None
     }
+
+  def recoverToBlobstoreStatus[F[_]: ApplicativeError[?[_], Throwable]](fa: F[BlobstoreStatus]): F[BlobstoreStatus] =
+    fa.recover {
+      case GoogleCloudStorage.GCSAccessError(_) => BlobstoreStatus.noAccess()
+      case NonFatal(t) => BlobstoreStatus.notOk(t.getMessage)
+    }
+
+  def reraiseAsGCSAccessError[F[_], A](fa: F[A])(implicit F: ApplicativeError[F, Throwable]): F[A] =
+    fa.recoverWith {
+      case NonFatal(t) => F.raiseError(GoogleCloudStorage.GCSAccessError(t.getMessage))
+    }
+
 }

@@ -55,7 +55,11 @@ object GCSClient {
   def sign[F[_]: Concurrent: ContextShift](cfg: GoogleAuthConfig)(client: Client[F]): Client[F] = {
 
     def signAndSubmit: Request[F] => Resource[F, Response[F]] =
-      (req => Resource.suspend(signRequest[F](cfg, req).map(client.run(_))))
+      (req => Resource.suspend {
+        handlers
+          .reraiseAsGCSAccessError(signRequest[F](cfg, req))
+          .map(client.run(_))
+      })
 
     Client(signAndSubmit)
   }
