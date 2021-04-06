@@ -19,6 +19,8 @@ package quasar.blobstore.gcs
 import scala._
 import scala.Predef._
 
+import com.google.auth.oauth2.AccessToken
+
 import cats.effect.{Concurrent, ConcurrentEffect, ContextShift, Resource, Sync}
 import cats.implicits._
 import org.http4s.client.Client
@@ -32,7 +34,7 @@ object GCSClient {
   private val log: Logger = LoggerFactory("quasar.blobstore.gcs")
 
   private def traceLog[F[_]: Sync](s: String): F[Unit] =
-    Sync[F].delay(log.error(s))
+    Sync[F].delay(log.trace(s))
 
   private def http4sLogger[F[_]: Concurrent](client: Client[F]): Client[F] =
     ResponseLogger.apply(logHeaders = true, logBody = false, logAction = Some(traceLog[F](_)))(
@@ -43,9 +45,9 @@ object GCSClient {
 
   private def signRequest[F[_]: Concurrent: ContextShift](cfg: GoogleAuthConfig, req: Request[F]): F[Request[F]] = {
     for {
-      accessToken <- GoogleCloudStorage.getAccessToken(cfg.serviceAccountAuthBytes)
+      (accessToken: Option[AccessToken]) <- GoogleCloudStorage.getAccessToken(cfg.serviceAccountAuthBytes)
       _ <- traceLog("accessToken: " + accessToken)
-      bearerToken = Authorization(Credentials.Token(AuthScheme.Bearer, accessToken.getTokenValue))
+      bearerToken = Authorization(Credentials.Token(AuthScheme.Bearer, accessToken.get.getTokenValue))
       _ <- traceLog("bearerToken: " + bearerToken)
     } yield req.transformHeaders(_.put(bearerToken))
   }

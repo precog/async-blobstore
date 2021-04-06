@@ -43,51 +43,91 @@ object GCSPropsServiceSpec extends Specification with CatsIO {
   private val log: Logger = LoggerFactory("quasar.blobstore.gcs.GCSPropsServiceSpec")
 
   val AUTH_FILE="precog-ci-275718-9de94866bc77.json"
-  val authCfgPath = Paths.get(getClass.getClassLoader.getResource(AUTH_FILE).toURI)
-  val authCfgString = new String(Files.readAllBytes(authCfgPath), UTF_8)
-  val authCfgJson: Json = Parse.parse(authCfgString) match {
-    case Left(value) => Json.obj("malformed" := true)
-    case Right(value) => value
+  val BAD_AUTH_FILE="bad-auth-file.json"
+
+  def getConfig(authFile: String) = {
+    val authCfgPath = Paths.get(getClass.getClassLoader.getResource(authFile).toURI)
+    val authCfgString = new String(Files.readAllBytes(authCfgPath), UTF_8)
+    val authCfgJson: Json = Parse.parse(authCfgString) match {
+      case Left(value) => Json.obj("malformed" := true)
+      case Right(value) => value
+    }
+    val googleAuthCfg = Json.obj("authCfg" := authCfgJson)
+    googleAuthCfg.as[GoogleAuthConfig].toOption.get
   }
 
-  val googleAuthCfg = Json.obj("authCfg" := authCfgJson)
-  val goodConfig = googleAuthCfg.as[GoogleAuthConfig].toOption.get
-
-  def mkPropsService(cfg: GoogleAuthConfig, bucket: Bucket): Resource[IO, PropsService[IO, GCSFileProperties]] =
+  val goodConfig = getConfig(AUTH_FILE)
+  val badConfig = getConfig(BAD_AUTH_FILE)
+  val bucketName = "precog-test-bucket"
+ 
+  def mkService(cfg: GoogleAuthConfig, bucket: Bucket): Resource[IO, PropsService[IO, GCSFileProperties]] =
     GoogleCloudStorage.mkContainerClient[IO](cfg).map(client => GCSPropsService(log, client, bucket))
 
-  def assertProps(
-      service: Resource[IO, PropsService[IO, GCSFileProperties]],
-      prefixPath: BlobPath,
-      matcher: Matcher[GCSFileProperties])
-      : IO[MatchResult[GCSFileProperties]] =
+  def assertProps[A](
+      service: Resource[IO, PropsService[IO, A]],
+      blobPath: BlobPath,
+      matcher: Matcher[Option[A]])
+      : IO[MatchResult[Option[A]]] =
     service use { svc =>
-      svc(prefixPath).flatMap {
-        case Some(value) => IO(value must matcher)
-        case None => ko("Unexpected None").asInstanceOf[MatchResult[GCSFileProperties]].pure[IO]
-      }
+      svc(blobPath).flatMap(a => IO(a must matcher))
     }
 
   "props service" >> {
     "existing file returns correct props" >> {
-      val bucketName = "bucket-8168b20d-a6f0-427f-a21b-232a2e8742e1"
-      val expected = GCSFileProperties.GCSFileProperties("zips.csv", bucketName, 1188150, "2020-08-19T16:52:01.093Z")
-      assertProps(
-        mkPropsService(goodConfig, Bucket(bucketName)),
+      assertProps[GCSFileProperties](
+        mkService(goodConfig, Bucket(bucketName)),
         BlobPath(List(PathElem("zips.csv"))),
-        be_===(expected))
+        beSome)
     }
 
-    //TODO: match on a throwable
-    "non-existing file returns error" >> {
-      val bucketName = "bucket-8168b20d-a6f0-427f-a21b-232a2e8742e1"
-      val nonfile = "i-am-not-a-real-file.json"
-      val expected = GCSError.GCSAccessError("No such object: " + bucketName +"/" + nonfile)
+    "existing blobpath returns some (2)" >> {
+      assertProps[GCSFileProperties](
+        mkService(goodConfig, Bucket(bucketName)),
+        BlobPath(List(PathElem("prefix3"), PathElem("subprefix5"), PathElem("cars2.data"))),
+        beSome)
+    }
 
-      assertProps(
-        mkPropsService(goodConfig, Bucket(bucketName)),
+    "non-existing file returns none" >> {
+      val nonfile = "i-am-not-a-real-file.json"
+      assertProps[GCSFileProperties](
+        mkService(goodConfig, Bucket(bucketName)),
         BlobPath(List(PathElem(nonfile))),
-        throwA(expected))
+        beNone)
+    }
+
+    "blobpath that only exists as prefix returns none" >> {
+      assertProps[GCSFileProperties](
+        mkService(goodConfig, Bucket(bucketName)),
+        BlobPath(List(PathElem("testdata"))),
+        beNone)
+    }
+
+    "nil blobpath returns none" >> {
+      assertProps[GCSFileProperties](
+        mkService(goodConfig, Bucket(bucketName)),
+        BlobPath(Nil),
+        beNone)
+    }
+
+    "empty string blobpath returns none" >> {
+      assertProps[GCSFileProperties](
+        mkService(goodConfig, Bucket(bucketName)),
+        BlobPath(List(PathElem(""))),
+        beNone)
+    }
+
+    "blobpath in non existing container returns none" >> {
+      assertProps[GCSFileProperties](
+        mkService(goodConfig, Bucket("non-existing-bucket")),
+        BlobPath(List(PathElem("something"))),
+        beNone)
+    } 
+
+    "invalid config returns none" >> {
+      assertProps[GCSFileProperties](
+        mkService(badConfig, Bucket(bucketName)),
+        BlobPath(List(PathElem("something"))),
+        beNone)
     }
 
   }

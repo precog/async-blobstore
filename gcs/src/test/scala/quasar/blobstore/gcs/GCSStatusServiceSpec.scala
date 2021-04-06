@@ -28,6 +28,7 @@ import cats.effect.{IO, Resource}
 import cats.effect.testing.specs2.CatsIO
 
 import org.specs2.mutable.Specification
+import org.specs2.matcher.{MatchResult}
 
 import java.nio.file.{Files, Paths}
 import java.nio.charset.StandardCharsets.UTF_8
@@ -37,7 +38,7 @@ class GCSStatusServiceSpec extends Specification with CatsIO {
   import GoogleAuthConfig.gbqConfigCodecJson
 
   val AUTH_FILE="precog-ci-275718-9de94866bc77.json"
-  //val BAD_AUTH_FILE="bad-auth-file.json"
+  val BAD_AUTH_FILE="bad-auth-file.json"
 
   def getConfig(authFileName: String): GoogleAuthConfig = {
     val authCfgPath = Paths.get(getClass.getClassLoader.getResource(authFileName).toURI)
@@ -50,42 +51,47 @@ class GCSStatusServiceSpec extends Specification with CatsIO {
     googleAuthCfg.as[GoogleAuthConfig].toOption.get
   }
 
-  def mkStatusService(cfg: GoogleAuthConfig, bucket: Bucket): Resource[IO, StatusService[IO]] =
+  def mkService(cfg: GoogleAuthConfig, bucket: Bucket): Resource[IO, StatusService[IO]] =
     GoogleCloudStorage.mkContainerClient[IO](cfg).map(client => GCSStatusService(client, bucket, cfg))
 
-  def assertStatus(service: IO[BlobstoreStatus], status: BlobstoreStatus) =
-    service.map(s => s must_=== status)
+  def assertStatus(
+      service: Resource[IO, StatusService[IO]],
+      status: BlobstoreStatus)
+      : IO[MatchResult[BlobstoreStatus]] =
+    service.use {svc => svc.map(b => b)}.map(s => s must_=== status)
 
-  // def assertStatusError(service: IO[StatusService[IO]]) =
-  //   service flatMap { svc =>
-  //     svc.map(_ must beLike {
-  //       case BlobstoreStatus.notOk(_) => ok
-  //     })
-  //   }
+  def assertStatusNotOk(
+      service: Resource[IO, StatusService[IO]])
+      : IO[MatchResult[BlobstoreStatus]] =
+    service use { svc =>
+      svc.map(_ must beLike {
+        case BlobstoreStatus.notOk(_) => ok
+      })
+    }
 
   "status service" >> {
 
-    "accessible container returns Ok" >> {
+    "valid, accessible, public container returns ok" >> {
       assertStatus(
-        mkStatusService(getConfig(AUTH_FILE), Bucket("precog-test-bucket")).use(a => a.map(b => b)),
+        mkService(getConfig(AUTH_FILE), Bucket("precog-test-bucket")),
         BlobstoreStatus.ok())
-    }
+     }
 
-    "non-existant container returns Not Found" >> {
+    "non existing container returns not found" >> {
       assertStatus(
-        mkStatusService(getConfig(AUTH_FILE), Bucket("nonexistantbucket")).use(a => a.map(b => b)),
-        BlobstoreStatus.notOk("Error: Not Found") )
+        mkService(getConfig(AUTH_FILE), Bucket("nonexsiting-bucket")),
+        BlobstoreStatus.notFound())
     }
 
-    // "wrong credentials returns no access" >> {
-    //   assertStatus(
-    //     mkStatusService(getConfig(BAD_AUTH_FILE), Bucket("precog-test-bucket")).use(a => a.map(b => b)),
-    //     BlobstoreStatus.noAccess())
-    // }
+    "wrong credentials returns no access" >> {
+      assertStatus(
+        mkService(getConfig(BAD_AUTH_FILE), Bucket("precog-test-bucket")),
+        BlobstoreStatus.noAccess())
+    }
 
-    // "invalid config returns not ok" >> {
-    //   assertStatusNotOk(mkService(InvalidConfig))
-    // }
+    "invalid config returns not ok" >> {
+      assertStatusNotOk(mkService(getConfig(BAD_AUTH_FILE), Bucket("precog-test-bucket")))
+    }
   }
 
 }

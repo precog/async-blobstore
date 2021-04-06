@@ -18,8 +18,8 @@ package quasar.blobstore.gcs
 
 import quasar.blobstore.services.PropsService
 
-import scala.{Int, Some}
-import scala.Predef.{String}
+import scala.{Int, None}
+import scala.Predef.String
 
 import argonaut._, Argonaut._
 
@@ -69,8 +69,8 @@ object GCSPropsService {
 
     } yield {
       gcsProps match {
-        case Left(value) => throw value
-        case Right(value) => Some(value)
+        case Left(value) => None
+        case Right(value) => value.some
       }
     }
   }

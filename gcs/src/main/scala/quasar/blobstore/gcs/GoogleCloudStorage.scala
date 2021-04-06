@@ -16,7 +16,7 @@
 
 package quasar.blobstore.gcs
 
-import scala.{Array, Byte}
+import scala.{Array, Byte, Option}
 import scala.Predef.String
 
 import cats.effect.{Concurrent, ConcurrentEffect, ContextShift, Resource}
@@ -60,5 +60,5 @@ object GoogleCloudStorage extends Logging {
     listUri
   }
 
-  def getAccessToken[F[_]: Concurrent: ContextShift](auth: Array[Byte]): F[AccessToken] = GCSAccessToken.token(auth)
+  def getAccessToken[F[_]: Concurrent: ContextShift](auth: Array[Byte]): F[Option[AccessToken]] = GCSAccessToken.token(auth)
 }
