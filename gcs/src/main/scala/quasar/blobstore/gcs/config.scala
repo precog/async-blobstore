@@ -19,3 +19,4 @@ package quasar.blobstore.gcs
 import scala.Predef._
 
 final case class Bucket(value: String)
+final case class Uri(value: String)
