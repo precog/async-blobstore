@@ -18,7 +18,8 @@ package quasar.blobstore.gcs
 
 import quasar.blobstore.paths._
 
-import scala.Boolean
+import java.lang.SuppressWarnings
+import scala.{Array, Boolean, Some}
 import scala.Predef.{genericArrayOps, String}
 import scala.collection.immutable.List
 import scala.util.{Either, Left, Right}
@@ -29,9 +30,16 @@ import fs2._
 object converters {
 
   def prefixPathToQueryParamValue(p: PrefixPath): String = {
-    val s = p.path.map(_.value).mkString("/")
+    val s = normalizePrefixPath(p).path.map(_.value).mkString("/")
     if (s == "") s else s + "/"
   }
+
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+  private def normalizePrefixPath(p: PrefixPath): PrefixPath =
+    p.path.lastOption match {
+      case Some(PathElem("")) => normalizePrefixPath(PrefixPath(p.path.init))
+      case _ => p
+    }
 
   def stripDelim(s: String): Either[String, String] =
     if (s.endsWith("/")) Right(s.substring(0, s.length - 1))
@@ -57,5 +65,4 @@ object converters {
     val names = blobPath.path.map(_.value)
     names.mkString("/")
   }
-
 }

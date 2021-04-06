@@ -16,7 +16,7 @@
 
 package quasar.blobstore.gcs
 
-import scala.{Array, Byte, Option}
+import scala.{Array, Byte}
 import scala.Predef.String
 
 import cats.effect.{Concurrent, ConcurrentEffect, ContextShift, Resource}
