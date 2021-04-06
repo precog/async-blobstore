@@ -55,6 +55,6 @@ object GoogleCloudStorage extends Logging {
       .addSegment("o")
       .addSegment(objectName)
 
-  def getAccessToken[F[_]: Concurrent: ContextShift](auth: Array[Byte]): F[Option[AccessToken]] =
+  def getAccessToken[F[_]: Concurrent: ContextShift](auth: Array[Byte]): F[AccessToken] =
     GCSAccessToken.token(auth)
 }

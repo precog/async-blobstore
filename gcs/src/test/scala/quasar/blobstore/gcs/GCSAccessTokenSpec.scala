@@ -46,7 +46,7 @@ class GCSAccessTokenSpec extends Specification with CatsIO {
 
   "access token service" >> {
     "get valid token" >> {
-       GCSAccessToken.token[IO](goodConfig.serviceAccountAuthBytes).map(tkn => tkn.get.getTokenValue.contains("ya29") )//length > 0 )
+       GCSAccessToken.token[IO](goodConfig.serviceAccountAuthBytes).map(tkn => tkn.getTokenValue.length > 200 )
     }
   }
 

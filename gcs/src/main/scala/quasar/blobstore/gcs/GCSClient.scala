@@ -19,8 +19,6 @@ package quasar.blobstore.gcs
 import scala._
 import scala.Predef._
 
-import com.google.auth.oauth2.AccessToken
-
 import cats.effect.{Concurrent, ConcurrentEffect, ContextShift, Resource, Sync}
 import cats.implicits._
 import org.http4s.client.Client
@@ -45,9 +43,9 @@ object GCSClient {
 
   private def signRequest[F[_]: Concurrent: ContextShift](cfg: ServiceAccountConfig, req: Request[F]): F[Request[F]] = {
     for {
-      (accessToken: Option[AccessToken]) <- GoogleCloudStorage.getAccessToken(cfg.serviceAccountAuthBytes)
+      accessToken <- GoogleCloudStorage.getAccessToken(cfg.serviceAccountAuthBytes)
       _ <- traceLog("accessToken: " + accessToken)
-      bearerToken = Authorization(Credentials.Token(AuthScheme.Bearer, accessToken.get.getTokenValue))
+      bearerToken = Authorization(Credentials.Token(AuthScheme.Bearer, accessToken.getTokenValue))
       _ <- traceLog("bearerToken: " + bearerToken)
     } yield req.transformHeaders(_.put(bearerToken))
   }

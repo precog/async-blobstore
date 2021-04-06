@@ -21,8 +21,7 @@ import cats.implicits._
 
 import scala.{
   Array,
-  Byte,
-  Option
+  Byte
 }
 
 import java.io.ByteArrayInputStream
@@ -32,7 +31,7 @@ import com.google.auth.oauth2.GoogleCredentials
 
 
 object GCSAccessToken {
-  def token[F[_]: Concurrent](auth: Array[Byte]): F[Option[AccessToken]] = {
+  def token[F[_]: Concurrent](auth: Array[Byte]): F[AccessToken] = {
     val credentials = Concurrent[F] delay {
       val authInputStream = new ByteArrayInputStream(auth)
       GoogleCredentials
@@ -42,6 +41,6 @@ object GCSAccessToken {
 
     credentials.flatMap(creds =>
       Concurrent[F].delay(creds.refreshIfExpired()) >>
-        Concurrent[F].delay(creds.refreshAccessToken().some ))
+        Concurrent[F].delay(creds.refreshAccessToken()))
   }
 }
