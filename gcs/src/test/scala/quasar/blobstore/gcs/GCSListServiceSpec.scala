@@ -41,8 +41,6 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 class GCSListServiceSpec extends Specification with CatsIO {
 
-  import GoogleAuthConfig.gbqConfigCodecJson
-
   private val log: Logger = LoggerFactory("quasar.blobstore.gcs.GCSListServiceSpec")
 
   val AUTH_FILE="precog-ci-275718-9de94866bc77.json"
@@ -53,10 +51,9 @@ class GCSListServiceSpec extends Specification with CatsIO {
     case Right(value) => value
   }
 
-  val googleAuthCfg = Json.obj("authCfg" := authCfgJson)
-  val goodConfig = googleAuthCfg.as[GoogleAuthConfig].toOption.get
+  val goodConfig = authCfgJson.as[ServiceAccountConfig].toOption.get
 
-  def mkListService(cfg: GoogleAuthConfig, bucket: Bucket): Resource[IO, ListService[IO]] =
+  def mkListService(cfg: ServiceAccountConfig, bucket: Bucket): Resource[IO, ListService[IO]] =
     GoogleCloudStorage.mkContainerClient[IO](cfg).map(client => GCSListService(log, client, bucket))
 
   def assertList(

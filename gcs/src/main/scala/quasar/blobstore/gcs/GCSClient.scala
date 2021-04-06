@@ -43,7 +43,7 @@ object GCSClient {
       )
     )
 
-  private def signRequest[F[_]: Concurrent: ContextShift](cfg: GoogleAuthConfig, req: Request[F]): F[Request[F]] = {
+  private def signRequest[F[_]: Concurrent: ContextShift](cfg: ServiceAccountConfig, req: Request[F]): F[Request[F]] = {
     for {
       (accessToken: Option[AccessToken]) <- GoogleCloudStorage.getAccessToken(cfg.serviceAccountAuthBytes)
       _ <- traceLog("accessToken: " + accessToken)
@@ -52,7 +52,7 @@ object GCSClient {
     } yield req.transformHeaders(_.put(bearerToken))
   }
 
-  def sign[F[_]: Concurrent: ContextShift](cfg: GoogleAuthConfig)(client: Client[F]): Client[F] = {
+  def sign[F[_]: Concurrent: ContextShift](cfg: ServiceAccountConfig)(client: Client[F]): Client[F] = {
 
     def signAndSubmit: Request[F] => Resource[F, Response[F]] =
       (req => Resource.suspend {
@@ -64,7 +64,7 @@ object GCSClient {
     Client(signAndSubmit)
   }
 
-  def apply[F[_]: ConcurrentEffect: ContextShift](cfg: GoogleAuthConfig)
+  def apply[F[_]: ConcurrentEffect: ContextShift](cfg: ServiceAccountConfig)
       : Resource[F, Client[F]] =
     AsyncHttpClientBuilder[F]
       .map[F, Client[F]](sign(cfg))

@@ -51,10 +51,9 @@ class GCSGetServiceSpec extends Specification with CatsIO {
     case Right(value) => value
   }
 
-  val googleAuthCfg = Json.obj("authCfg" := authCfgJson)
-  val goodConfig = googleAuthCfg.as[GoogleAuthConfig].toOption.get
+  val goodConfig = authCfgJson.as[ServiceAccountConfig].toOption.get
 
-  def mkGetService(cfg: GoogleAuthConfig, bucket: Bucket): Resource[IO, GetServiceResource[IO]] =
+  def mkGetService(cfg: ServiceAccountConfig, bucket: Bucket): Resource[IO, GetServiceResource[IO]] =
     GoogleCloudStorage.mkContainerClient[IO](cfg).map(client => GCSGetService.mk[IO](log, client, bucket))
 
   def assertGet(

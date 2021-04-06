@@ -35,23 +35,20 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 class GCSStatusServiceSpec extends Specification with CatsIO {
 
-  import GoogleAuthConfig.gbqConfigCodecJson
-
   val AUTH_FILE="precog-ci-275718-9de94866bc77.json"
   val BAD_AUTH_FILE="bad-auth-file.json"
 
-  def getConfig(authFileName: String): GoogleAuthConfig = {
+  def getConfig(authFileName: String): ServiceAccountConfig = {
     val authCfgPath = Paths.get(getClass.getClassLoader.getResource(authFileName).toURI)
     val authCfgString = new String(Files.readAllBytes(authCfgPath), UTF_8)
     val authCfgJson: Json = Parse.parse(authCfgString) match {
       case Left(value) => Json.obj("malformed" := true)
       case Right(value) => value
     }
-    val googleAuthCfg = Json.obj("authCfg" := authCfgJson)
-    googleAuthCfg.as[GoogleAuthConfig].toOption.get
+    authCfgJson.as[ServiceAccountConfig].toOption.get
   }
 
-  def mkService(cfg: GoogleAuthConfig, bucket: Bucket): Resource[IO, StatusService[IO]] =
+  def mkService(cfg: ServiceAccountConfig, bucket: Bucket): Resource[IO, StatusService[IO]] =
     GoogleCloudStorage.mkContainerClient[IO](cfg).map(client => GCSStatusService(client, bucket, cfg))
 
   def assertStatus(

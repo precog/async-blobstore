@@ -34,8 +34,6 @@ import scala.util.Right
 
 class GCSAccessTokenSpec extends Specification with CatsIO {
 
-  import GoogleAuthConfig.gbqConfigCodecJson
-
   val AUTH_FILE="precog-ci-275718-9de94866bc77.json"
   val authCfgPath = Paths.get(getClass.getClassLoader.getResource(AUTH_FILE).toURI)
   val authCfgString = new String(Files.readAllBytes(authCfgPath), UTF_8)
@@ -44,8 +42,7 @@ class GCSAccessTokenSpec extends Specification with CatsIO {
     case Right(value) => value
   }
 
-  val googleAuthCfg = Json.obj("authCfg" := authCfgJson)
-  val goodConfig = googleAuthCfg.as[GoogleAuthConfig].toOption.get
+  val goodConfig = authCfgJson.as[ServiceAccountConfig].toOption.get
 
   "access token service" >> {
     "get valid token" >> {

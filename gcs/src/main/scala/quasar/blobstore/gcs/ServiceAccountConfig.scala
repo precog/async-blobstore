@@ -16,35 +16,29 @@
 
 package quasar.blobstore.gcs
 
+import java.net.{URI, URISyntaxException}
+import scala.{Array, Byte, StringContext, Either}
 import scala.Predef.String
 
 import argonaut._, Argonaut._
-
 import cats.implicits._
 
-import scala.{Array, Byte, StringContext, Either}
+final case class ServiceAccountConfig(
+    tokenUri: URI,
+    authProviderCertUrl: URI,
+    privateKey: String,
+    clientId: String,
+    clientCertUrl: URI,
+    authUri: URI,
+    projectId: String,
+    privateKeyId: String,
+    clientEmail: String,
+    accountType: String) {
 
-import java.net.{URI, URISyntaxException}
-
-final case class GoogleAuthConfig(authCfg: ServiceAccountConfig) {
-  import GoogleAuthConfig.serviceAccountConfigCodecJson
-  val serviceAccountAuthBytes: Array[Byte] = authCfg.asJson.toString.getBytes("UTF-8")
+  val serviceAccountAuthBytes: Array[Byte] = this.asJson.toString.getBytes("UTF-8")
 }
 
-final case class ServiceAccountConfig(
-  tokenUri: URI,
-  authProviderCertUrl: URI,
-  privateKey: String,
-  clientId: String,
-  clientCertUrl: URI,
-  authUri: URI,
-  projectId: String,
-  privateKeyId: String,
-  clientEmail: String,
-  accountType: String)
-
-object GoogleAuthConfig {
-  val Redacted: String = "<REDACTED>"
+object ServiceAccountConfig {
 
   implicit val uriCodecJson: CodecJson[URI] =
     CodecJson(
@@ -57,7 +51,7 @@ object GoogleAuthConfig {
           DecodeResult.ok(_))
       } yield uri)
 
-  implicit val serviceAccountConfigCodecJson: CodecJson[ServiceAccountConfig] = 
+  implicit val serviceAccountConfigCodecJson: CodecJson[ServiceAccountConfig] =
     casecodec10[URI,URI, String, String, URI, URI, String, String, String, String, ServiceAccountConfig](
       (tokenUri,
       authProviderCertUrl,
@@ -79,8 +73,8 @@ object GoogleAuthConfig {
         privateKeyId = privateKeyId,
         clientEmail = clientEmail,
         accountType = accountType),
-      sac => 
-        (sac.tokenUri, 
+      sac =>
+        (sac.tokenUri,
         sac.authProviderCertUrl,
         sac.privateKey,
         sac.clientId,
@@ -100,9 +94,4 @@ object GoogleAuthConfig {
           "private_key_id",
           "client_email",
           "type")
-
-  implicit val gbqConfigCodecJson: CodecJson[GoogleAuthConfig] =
-    casecodec1[ServiceAccountConfig, GoogleAuthConfig](
-      authCfg => GoogleAuthConfig(authCfg),
-      gbqc => (gbqc.authCfg).some)("authCfg")
 }

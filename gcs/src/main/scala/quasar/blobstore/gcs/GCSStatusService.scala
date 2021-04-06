@@ -44,7 +44,7 @@ object GCSStatusService {
   def apply[F[_]: Concurrent: ContextShift](
       client: Client[F],
       bucket: Bucket,
-      config: GoogleAuthConfig): StatusService[F] = {
+      config: ServiceAccountConfig): StatusService[F] = {
 
     val statusUrl = GoogleCloudStorage.gcsStatusUrl(bucket)
     val req = Request[F](Method.GET, statusUrl)

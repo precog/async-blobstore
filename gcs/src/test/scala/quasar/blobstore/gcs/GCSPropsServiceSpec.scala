@@ -51,15 +51,14 @@ object GCSPropsServiceSpec extends Specification with CatsIO {
       case Left(value) => Json.obj("malformed" := true)
       case Right(value) => value
     }
-    val googleAuthCfg = Json.obj("authCfg" := authCfgJson)
-    googleAuthCfg.as[GoogleAuthConfig].toOption.get
+    authCfgJson.as[ServiceAccountConfig].toOption.get
   }
 
   val goodConfig = getConfig(AUTH_FILE)
   val badConfig = getConfig(BAD_AUTH_FILE)
   val bucketName = "precog-test-bucket"
 
-  def mkService(cfg: GoogleAuthConfig, bucket: Bucket): Resource[IO, PropsService[IO, GCSFileProperties]] =
+  def mkService(cfg: ServiceAccountConfig, bucket: Bucket): Resource[IO, PropsService[IO, GCSFileProperties]] =
     GoogleCloudStorage.mkContainerClient[IO](cfg).map(client => GCSPropsService(log, client, bucket))
 
   def assertProps[A](

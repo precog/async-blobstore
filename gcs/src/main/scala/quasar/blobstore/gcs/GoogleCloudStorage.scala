@@ -27,7 +27,7 @@ import org.slf4s.Logging
 
 object GoogleCloudStorage extends Logging {
 
-  def mkContainerClient[F[_]: Concurrent: ConcurrentEffect: ContextShift](cfg: GoogleAuthConfig): Resource[F, Client[F]] =
+  def mkContainerClient[F[_]: Concurrent: ConcurrentEffect: ContextShift](cfg: ServiceAccountConfig): Resource[F, Client[F]] =
     GCSClient(cfg)
 
   private def bucketUrl(bucket: Bucket) =
@@ -55,5 +55,6 @@ object GoogleCloudStorage extends Logging {
       .addSegment("o")
       .addSegment(objectName)
 
-  def getAccessToken[F[_]: Concurrent: ContextShift](auth: Array[Byte]): F[Option[AccessToken]] = GCSAccessToken.token(auth)
+  def getAccessToken[F[_]: Concurrent: ContextShift](auth: Array[Byte]): F[Option[AccessToken]] =
+    GCSAccessToken.token(auth)
 }
