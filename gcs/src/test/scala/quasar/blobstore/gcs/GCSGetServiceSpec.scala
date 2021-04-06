@@ -73,8 +73,8 @@ class GCSGetServiceSpec extends Specification with CatsIO {
       blobPath: BlobPath) =
     service flatMap { svc =>
       svc(blobPath).map {
-        case Some(s) => s.compile.to(Array).map(a => {println("array: " + a.map(_.toChar).mkString ); a.isEmpty must_=== true}) //ko(s"Unexpected Some: $s")
-        case None => ko("Unexpected None").asInstanceOf[MatchResult[Array[Byte]]].pure[IO]
+        case Some(s) => ko(s"Unexpected Some: $s")
+        case None => ok
       }
     }
 

@@ -18,21 +18,21 @@ package quasar.blobstore.gcs
 
 import quasar.blobstore.services.GetServiceResource
 
-import scala.{Byte, Some}
+import java.lang.RuntimeException
+import scala.{Byte, None, Some, StringContext}
+import scala.Predef.String
 
 import cats.data.Kleisli
-import cats.effect.{ConcurrentEffect, ContextShift}
+import cats.effect.{ConcurrentEffect, ContextShift, Resource}
 import cats.implicits._
 import fs2.Stream
-import org.http4s.{
-  Method,
-  Request,
-  Status
-}
+import org.http4s.{Method, Request, Status}
 import org.http4s.client.Client
 import org.slf4s.Logger
 
 object GCSGetService {
+
+  case class GetError(message: String) extends RuntimeException(message)
 
   def mk[F[_]: ConcurrentEffect: ContextShift](
       log: Logger,
@@ -44,11 +44,21 @@ object GCSGetService {
     val downloadUrl = GoogleCloudStorage.gcsDownloadUrl(bucket, filepath)
     val req = Request[F](Method.GET, downloadUrl)
 
-    client.run(req).evalMap[F, Stream[F, Byte]] {resp => {
-      resp.status match {
-        case Status.Ok => resp.body.pure[F]
-        case _ => Stream[F, Byte]().pure[F]
-      }
-    }}.map(Some(_))
+    for {
+      props <- Resource.liftF(GCSPropsService[F](log, client, bucket).apply(blobPath))
+      res <-
+        props match {
+          case None =>
+            none[Stream[F, Byte]].pure[Resource[F, *]]
+          case Some(_) =>
+            val r = client.run(req).evalMap[F, Stream[F, Byte]] { resp =>
+              resp.status match {
+                case Status.Ok => resp.body.pure[F]
+                case s => ConcurrentEffect[F].raiseError(GetError(s"Unable to get $filepath. Got status $s"))
+              }
+            }
+            r.map(Some(_))
+        }
+    } yield res
   }
 }
