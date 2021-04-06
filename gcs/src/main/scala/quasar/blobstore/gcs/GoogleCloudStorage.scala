@@ -33,8 +33,12 @@ object GoogleCloudStorage extends Logging {
 
   def gcsStatusUrl(bucket: Bucket): Uri = {
     //TODO: fix this
-    val statusUri = Uri.fromString("https://storage.googleapis.com/storage/v1/b/"+ bucket.value +"/iam").toOption.get
-    statusUri
+    // val statusUri = Uri.fromString("https://storage.googleapis.com/storage/v1/b/"+ bucket.value +"/iam").toOption.get
+    Uri.unsafeFromString("https://storage.googleapis.com/storage/v1/b/")
+      .addSegment(bucket.value)
+      .addSegment("iam")
+
+    // statusUri
   }
 
   def gcsDownloadUrl(bucket: Bucket, objectName: String): Uri = {

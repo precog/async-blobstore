@@ -89,11 +89,10 @@ class GCSStatusServiceSpec extends Specification with CatsIO {
         BlobstoreStatus.noAccess())
     }
 
-    // "invalid config returns not ok" >> {
-    //   assertStatus(
-    //     mkService(getConfig(AUTH_FILE), Bucket("&^%")),
-    //     BlobstoreStatus.noAccess())
-    // }
+    "invalid config returns not ok" >> {
+      assertStatusNotOk(
+        mkService(getConfig(AUTH_FILE), Bucket("&^%")))
+    }
   }
 
 }
