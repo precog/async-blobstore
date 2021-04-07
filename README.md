@@ -2,6 +2,7 @@
 
 ## Usage
 
+
 ```sbt
 libraryDependencies += "com.precog" %% "async-blobstore" % <version>
 ```

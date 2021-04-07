@@ -20,3 +20,5 @@ target/
 /pubring.pgp.enc
 /scripts/readVersion
 /secring.pgp.enc
+gcs/src/test/resources/bad-auth-file.json
+gcs/src/test/resources/precog-ci-275718-9de94866bc77.json

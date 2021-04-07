@@ -14,21 +14,9 @@
  * limitations under the License.
  */
 
-package quasar.blobstore
+package quasar.blobstore.gcs
 
-import scala.Predef.String
-import scala.collection.immutable.List
+import scala.Predef._
 
-object paths {
-
-  final case class PathElem(value: String)
-
-  type Path = List[PathElem]
-
-  trait BlobstorePath {
-    def path: Path
-  }
-
-  final case class PrefixPath(path: Path) extends BlobstorePath
-  final case class BlobPath(path: Path) extends BlobstorePath
-}
+final case class Bucket(value: String)
+final case class Url(value: String)

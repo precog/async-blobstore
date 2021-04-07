@@ -47,7 +47,7 @@ object fixtures {
       val maxQueueSize = None
     }
 
-    val InvalidConfig =
+  val InvalidConfig =
     new Config {
       val containerName = ContainerName("doesnotexist")
       val credentials = Some(AzureCredentials.SharedKey(AccountName(""), AccountKey("")))
