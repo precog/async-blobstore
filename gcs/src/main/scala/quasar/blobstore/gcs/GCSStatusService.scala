@@ -23,7 +23,7 @@ import argonaut._, Argonaut._
 
 import quasar.blobstore.BlobstoreStatus
 
-import cats.effect.{Concurrent, ContextShift, Sync}
+import cats.effect.Sync
 import cats.implicits._
 
 import org.http4s.{
@@ -41,7 +41,7 @@ import quasar.blobstore.services.StatusService
 
 object GCSStatusService {
 
-  def apply[F[_]: Concurrent: ContextShift](
+  def apply[F[_]: Sync](
       client: Client[F],
       bucket: Bucket,
       config: ServiceAccountConfig): StatusService[F] = {

@@ -23,7 +23,7 @@ import scala.{Byte, None, Some, StringContext}
 import scala.Predef.String
 
 import cats.data.Kleisli
-import cats.effect.{ConcurrentEffect, ContextShift, Resource}
+import cats.effect.{Resource, Sync}
 import cats.implicits._
 import fs2.Stream
 import org.http4s.{Method, Request, Status}
@@ -34,7 +34,7 @@ object GCSGetService {
 
   case class GetError(message: String) extends RuntimeException(message)
 
-  def mk[F[_]: ConcurrentEffect: ContextShift](
+  def mk[F[_]: Sync](
       log: Logger,
       client: Client[F],
       bucket: Bucket)
@@ -54,7 +54,7 @@ object GCSGetService {
             val r = client.run(req).evalMap[F, Stream[F, Byte]] { resp =>
               resp.status match {
                 case Status.Ok => resp.body.pure[F]
-                case s => ConcurrentEffect[F].raiseError(GetError(s"Unable to get $filepath. Got status $s"))
+                case s => Sync[F].raiseError(GetError(s"Unable to get $filepath. Got status $s"))
               }
             }
             r.map(Some(_))

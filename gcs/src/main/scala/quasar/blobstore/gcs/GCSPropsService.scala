@@ -23,7 +23,7 @@ import scala.Predef.String
 
 import argonaut._, Argonaut._
 import cats.data.Kleisli
-import cats.effect.{Concurrent, ConcurrentEffect, ContextShift, Sync}
+import cats.effect.Sync
 import cats.implicits._
 
 import org.http4s.{
@@ -41,7 +41,7 @@ object GCSPropsService {
 
   import GCSFileProperties._
 
-  def apply[F[_]: Concurrent: ContextShift](
+  def apply[F[_]: Sync](
       log: Logger,
       client: Client[F],
       bucket: Bucket): PropsService[F, GCSFileProperties] = Kleisli { blobPath =>
@@ -60,7 +60,7 @@ object GCSPropsService {
     handlers.recoverToNone(resp)
   }
 
-  def mk[F[_]: ConcurrentEffect: ContextShift](
+  def mk[F[_]: Sync](
       log: Logger,
       client: Client[F],
       bucket: Bucket)

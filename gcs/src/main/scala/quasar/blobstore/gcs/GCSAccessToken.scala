@@ -16,7 +16,7 @@
 
 package quasar.blobstore.gcs
 
-import cats.effect.Concurrent
+import cats.effect.Sync
 import cats.implicits._
 
 import scala.{
@@ -31,8 +31,8 @@ import com.google.auth.oauth2.GoogleCredentials
 
 
 object GCSAccessToken {
-  def token[F[_]: Concurrent](auth: Array[Byte]): F[AccessToken] = {
-    val credentials = Concurrent[F] delay {
+  def token[F[_]: Sync](auth: Array[Byte]): F[AccessToken] = {
+    val credentials = Sync[F] delay {
       val authInputStream = new ByteArrayInputStream(auth)
       GoogleCredentials
         .fromStream(authInputStream)
@@ -40,7 +40,7 @@ object GCSAccessToken {
     }
 
     credentials.flatMap(creds =>
-      Concurrent[F].delay(creds.refreshIfExpired()) >>
-        Concurrent[F].delay(creds.refreshAccessToken()))
+      Sync[F].delay(creds.refreshIfExpired()) >>
+        Sync[F].delay(creds.refreshAccessToken()))
   }
 }

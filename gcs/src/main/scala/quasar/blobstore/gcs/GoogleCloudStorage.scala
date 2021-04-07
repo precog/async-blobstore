@@ -19,15 +19,16 @@ package quasar.blobstore.gcs
 import scala.{Array, Byte}
 import scala.Predef.String
 
-import cats.effect.{Concurrent, ConcurrentEffect, ContextShift, Resource}
+import cats.effect.{Resource, Sync}
 import com.google.auth.oauth2.AccessToken
 import org.http4s.Uri
 import org.http4s.client.Client
 import org.slf4s.Logging
+import cats.effect.ConcurrentEffect
 
 object GoogleCloudStorage extends Logging {
 
-  def mkContainerClient[F[_]: Concurrent: ConcurrentEffect: ContextShift](cfg: ServiceAccountConfig): Resource[F, Client[F]] =
+  def mkContainerClient[F[_]: ConcurrentEffect](cfg: ServiceAccountConfig): Resource[F, Client[F]] =
     GCSClient(cfg)
 
   private def bucketUrl(bucket: Bucket) =
@@ -55,6 +56,6 @@ object GoogleCloudStorage extends Logging {
       .addSegment("o")
       .addSegment(objectName)
 
-  def getAccessToken[F[_]: Concurrent: ContextShift](auth: Array[Byte]): F[AccessToken] =
+  def getAccessToken[F[_]: Sync](auth: Array[Byte]): F[AccessToken] =
     GCSAccessToken.token(auth)
 }

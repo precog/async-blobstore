@@ -25,7 +25,7 @@ import scala.util.{Left, Right}
 import argonaut._, Argonaut._
 
 import cats.data.Kleisli
-import cats.effect.{ConcurrentEffect, Concurrent, ContextShift, Sync}
+import cats.effect.Sync
 import cats.implicits._
 
 import org.http4s.{
@@ -41,7 +41,7 @@ import org.slf4s.Logger
 
 object GCSListService {
 
-  def apply[F[_]: Concurrent: ContextShift](
+  def apply[F[_]: Sync](
       log: Logger,
       client: Client[F],
       bucket: Bucket): ListService[F] = Kleisli { prefixPath =>
@@ -69,7 +69,7 @@ object GCSListService {
     }
   }
 
-  def mk[F[_]: ConcurrentEffect: ContextShift](
+  def mk[F[_]: Sync](
       log: Logger,
       client: Client[F],
       bucket: Bucket)

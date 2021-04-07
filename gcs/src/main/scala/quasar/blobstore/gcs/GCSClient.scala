@@ -19,7 +19,7 @@ package quasar.blobstore.gcs
 import scala._
 import scala.Predef._
 
-import cats.effect.{Concurrent, ConcurrentEffect, ContextShift, Resource, Sync}
+import cats.effect.{Concurrent, ConcurrentEffect, Resource, Sync}
 import cats.implicits._
 import org.http4s.client.Client
 import org.http4s.client.middleware.{RequestLogger, ResponseLogger}
@@ -41,7 +41,7 @@ object GCSClient {
       )
     )
 
-  private def signRequest[F[_]: Concurrent: ContextShift](cfg: ServiceAccountConfig, req: Request[F]): F[Request[F]] = {
+  private def signRequest[F[_]: Sync](cfg: ServiceAccountConfig, req: Request[F]): F[Request[F]] = {
     for {
       accessToken <- GoogleCloudStorage.getAccessToken(cfg.serviceAccountAuthBytes)
       _ <- traceLog("accessToken: " + accessToken)
@@ -50,7 +50,7 @@ object GCSClient {
     } yield req.transformHeaders(_.put(bearerToken))
   }
 
-  def sign[F[_]: Concurrent: ContextShift](cfg: ServiceAccountConfig)(client: Client[F]): Client[F] = {
+  def sign[F[_]: Sync](cfg: ServiceAccountConfig)(client: Client[F]): Client[F] = {
 
     def signAndSubmit: Request[F] => Resource[F, Response[F]] =
       (req => Resource.suspend {
@@ -62,7 +62,7 @@ object GCSClient {
     Client(signAndSubmit)
   }
 
-  def apply[F[_]: ConcurrentEffect: ContextShift](cfg: ServiceAccountConfig)
+  def apply[F[_]: ConcurrentEffect](cfg: ServiceAccountConfig)
       : Resource[F, Client[F]] =
     AsyncHttpClientBuilder[F]
       .map[F, Client[F]](sign(cfg))
