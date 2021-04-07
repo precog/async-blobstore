@@ -16,20 +16,19 @@
 
 package quasar.blobstore.gcs
 
-import java.net.{URI, URISyntaxException}
-import scala.{Array, Byte, StringContext, Either}
+import scala.{Array, Byte}
 import scala.Predef.String
 
 import argonaut._, Argonaut._
 import cats.implicits._
 
 final case class ServiceAccountConfig(
-    tokenUri: URI,
-    authProviderCertUrl: URI,
+    tokenUri: Url,
+    authProviderCertUrl: Url,
     privateKey: String,
     clientId: String,
-    clientCertUrl: URI,
-    authUri: URI,
+    clientCertUrl: Url,
+    authUri: Url,
     projectId: String,
     privateKeyId: String,
     clientEmail: String,
@@ -40,19 +39,8 @@ final case class ServiceAccountConfig(
 
 object ServiceAccountConfig {
 
-  implicit val uriCodecJson: CodecJson[URI] =
-    CodecJson(
-      uri => Json.jString(uri.toString),
-      c => for {
-        uriStr <- c.jdecode[String]
-        uri0 = Either.catchOnly[URISyntaxException](new URI(uriStr))
-        uri <- uri0.fold(
-          ex => DecodeResult.fail(s"Invalid URI: ${ex.getMessage}", c.history),
-          DecodeResult.ok(_))
-      } yield uri)
-
   implicit val serviceAccountConfigCodecJson: CodecJson[ServiceAccountConfig] =
-    casecodec10[URI,URI, String, String, URI, URI, String, String, String, String, ServiceAccountConfig](
+    casecodec10[String, String, String, String, String, String, String, String, String, String, ServiceAccountConfig](
       (tokenUri,
       authProviderCertUrl,
       privateKey,
@@ -63,23 +51,23 @@ object ServiceAccountConfig {
       privateKeyId,
       clientEmail,
       accountType) => ServiceAccountConfig(
-        tokenUri = tokenUri,
-        authProviderCertUrl = authProviderCertUrl,
+        tokenUri = Url(tokenUri),
+        authProviderCertUrl = Url(authProviderCertUrl),
         privateKey = privateKey,
         clientId = clientId,
-        clientCertUrl = clientCertUrl,
-        authUri = authUri,
+        clientCertUrl = Url(clientCertUrl),
+        authUri = Url(authUri),
         projectId = projectId,
         privateKeyId = privateKeyId,
         clientEmail = clientEmail,
         accountType = accountType),
       sac =>
-        (sac.tokenUri,
-        sac.authProviderCertUrl,
+        (sac.tokenUri.value,
+        sac.authProviderCertUrl.value,
         sac.privateKey,
         sac.clientId,
-        sac.clientCertUrl,
-        sac.authUri,
+        sac.clientCertUrl.value,
+        sac.authUri.value,
         sac.projectId,
         sac.privateKeyId,
         sac.clientEmail,
