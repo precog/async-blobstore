@@ -16,7 +16,11 @@
 
 package quasar.blobstore.gcs
 
+import java.nio.file.{Files, Paths}
+import java.nio.charset.StandardCharsets.UTF_8
+
 import scala.Predef._
+import scala.util.{Left, Right}
 
 import argonaut._, Argonaut._
 
@@ -24,13 +28,6 @@ import cats.effect.IO
 import cats.effect.testing.specs2.CatsIO
 import org.specs2.mutable.Specification
 
-import java.nio.file.{Files, Paths}
-import java.nio.charset.StandardCharsets.UTF_8
-
-import org.specs2.mutable.Specification
-
-import scala.util.Left
-import scala.util.Right
 
 class GCSAccessTokenSpec extends Specification with CatsIO {
 
