@@ -109,16 +109,12 @@ class GCSListServiceSpec extends Specification with CatsIO {
 
     "existing non-leaf prefix returns prefixpaths and blobpaths" >> {
       val expected = List[BlobstorePath](
-        BlobPath(List(PathElem("testdata"), PathElem("array.json"))),
-        PrefixPath(List(PathElem("testdata"), PathElem("á"))),
-        PrefixPath(List(PathElem("testdata"), PathElem("a b"))),
-        BlobPath(List(PathElem("testdata"), PathElem("lines.json"))),
-        PrefixPath(List(PathElem("testdata"), PathElem("El veloz murciélago hindú"))),
-        BlobPath(List(PathElem("testdata"), PathElem("test.csv"))))
+        PrefixPath(List(PathElem("dir1"), PathElem("dir2"))),
+        BlobPath(List(PathElem("dir1"), PathElem("lines.json"))))
 
       assertList(
         mkListService(goodConfig, Bucket("precog-test-bucket")),
-        PrefixPath(List(PathElem("testdata"))),
+        PrefixPath(List(PathElem("dir1"))),
         be_===(expected))
     }
 
