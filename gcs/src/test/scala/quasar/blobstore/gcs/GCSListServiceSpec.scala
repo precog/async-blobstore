@@ -72,24 +72,24 @@ class GCSListServiceSpec extends Specification with CatsIO {
 
     "root returns prefixpaths and blobpaths" >> {
       val expected = List[BlobstorePath](
-        PrefixPath(List(PathElem("somefolder"))),
-        BlobPath(List(PathElem("zips.csv"))),
-        BlobPath(List(PathElem("zips.json"))))
+        PrefixPath(List(PathElem("dir1"))),
+        BlobPath(List(PathElem("extraSmallZips.data"))),
+        PrefixPath(List(PathElem("prefix3"))),
+        PrefixPath(List(PathElem("testdata"))))
 
       assertList(
-        mkListService(goodConfig, Bucket("bucket-8168b20d-a6f0-427f-a21b-232a2e8742e1")),
+        mkListService(goodConfig, Bucket("precog-test-bucket")),
         PrefixPath(List()),
         be_===(expected))
     }
 
     "existing leaf prefix returns blobpaths" >> {
       val expected = List[BlobstorePath](
-        BlobPath(List(PathElem("somefolder"), PathElem("nested"), PathElem("false.boolean.json"))),
-        BlobPath(List(PathElem("somefolder"), PathElem("nested"), PathElem("int.number.json"))))
+        BlobPath(List(PathElem("dir1"), PathElem("dir2"), PathElem("dir3"), PathElem("flattenable.data"))))
 
       assertList(
-        mkListService(goodConfig, Bucket("bucket-8168b20d-a6f0-427f-a21b-232a2e8742e1")),
-        PrefixPath(List(PathElem("somefolder"), PathElem("nested"))),
+        mkListService(goodConfig, Bucket("precog-test-bucket")),
+        PrefixPath(List(PathElem("dir1"), PathElem("dir2"), PathElem("dir3")) ),
         be_===(expected))
     }
 
@@ -109,12 +109,16 @@ class GCSListServiceSpec extends Specification with CatsIO {
 
     "existing non-leaf prefix returns prefixpaths and blobpaths" >> {
       val expected = List[BlobstorePath](
-        PrefixPath(List(PathElem("somefolder"), PathElem("nested"))),
-        BlobPath(List(PathElem("somefolder"), PathElem("spacex-launches.json"))))
+        BlobPath(List(PathElem("testdata"), PathElem("array.json"))),
+        PrefixPath(List(PathElem("testdata"), PathElem("á"))),
+        PrefixPath(List(PathElem("testdata"), PathElem("a b"))),
+        BlobPath(List(PathElem("testdata"), PathElem("lines.json"))),
+        PrefixPath(List(PathElem("testdata"), PathElem("El veloz murciélago hindú"))),
+        BlobPath(List(PathElem("testdata"), PathElem("test.csv"))))
 
       assertList(
-        mkListService(goodConfig, Bucket("bucket-8168b20d-a6f0-427f-a21b-232a2e8742e1")),
-        PrefixPath(List(PathElem("somefolder"))),
+        mkListService(goodConfig, Bucket("precog-test-bucket")),
+        PrefixPath(List(PathElem("testdata"))),
         be_===(expected))
     }
 

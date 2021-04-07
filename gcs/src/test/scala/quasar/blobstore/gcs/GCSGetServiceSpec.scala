@@ -81,18 +81,18 @@ class GCSGetServiceSpec extends Specification with CatsIO {
     "get service" >> {
 
       "existing blobpath returns expected bytes" >> {
-        val expected = "42\n".getBytes(UTF_8)
+        val expected = "[1, 2]\n[3, 4]\n".getBytes(UTF_8)
 
         assertGet(
-            mkGetService(goodConfig, Bucket("bucket-8168b20d-a6f0-427f-a21b-232a2e8742e1")),
-            BlobPath(List(PathElem("somefolder"), PathElem("nested"), PathElem("int.number.json"))),
+            mkGetService(goodConfig, Bucket("precog-test-bucket")),
+            BlobPath(List(PathElem("testdata"), PathElem("lines.json"))),
             be_===(expected))
         }
 
       "non-existing blobpath returns none" >> {
 
         assertGetNone(
-          mkGetService(goodConfig, Bucket("bucket-8168b20d-a6f0-427f-a21b-232a2e8742e1")),
+          mkGetService(goodConfig, Bucket("precog-test-bucket")),
           BlobPath(List(PathElem("testdata"), PathElem("notthere"))))
         }
 
