@@ -62,6 +62,9 @@ jobs:
       - name: Decrypt gcp service account json key
         run: $SBT ++${{ matrix.scala }} 'decryptSecret gcs/src/test/resources/precog-ci-275718-9de94866bc77.json.enc'
 
+      - name: Decrypt bad gcp service account json key
+        run: $SBT ++${{ matrix.scala }} 'decryptSecret gcs/src/test/resources/bad-auth-file.json.enc'
+
       - name: Check that workflows are up to date
         run: $SBT ++${{ matrix.scala }} githubWorkflowCheck
 

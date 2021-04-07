@@ -18,6 +18,11 @@ ThisBuild / githubWorkflowBuildPreamble +=
     List("decryptSecret gcs/src/test/resources/precog-ci-275718-9de94866bc77.json.enc"),
     name = Some("Decrypt gcp service account json key"))
 
+ThisBuild / githubWorkflowBuildPreamble +=
+  WorkflowStep.Sbt(
+    List("decryptSecret gcs/src/test/resources/bad-auth-file.json.enc"),
+    name = Some("Decrypt bad gcp service account json key"))
+
 val AwsSdkVersion = "2.15.34"
 val Fs2Version = "2.4.5"
 val MonixVersion = "3.3.0"
