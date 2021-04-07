@@ -44,9 +44,7 @@ object GCSClient {
   private def signRequest[F[_]: Sync](cfg: ServiceAccountConfig, req: Request[F]): F[Request[F]] = {
     for {
       accessToken <- GoogleCloudStorage.getAccessToken(cfg.serviceAccountAuthBytes)
-      _ <- traceLog("accessToken: " + accessToken)
       bearerToken = Authorization(Credentials.Token(AuthScheme.Bearer, accessToken.getTokenValue))
-      _ <- traceLog("bearerToken: " + bearerToken)
     } yield req.transformHeaders(_.put(bearerToken))
   }
 

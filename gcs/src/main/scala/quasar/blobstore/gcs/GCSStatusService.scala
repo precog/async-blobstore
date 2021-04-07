@@ -22,6 +22,7 @@ import scala.Predef._
 import argonaut._, Argonaut._
 
 import quasar.blobstore.BlobstoreStatus
+import quasar.blobstore.services.StatusService
 
 import cats.effect.Sync
 import cats.implicits._
@@ -36,15 +37,14 @@ import org.http4s.client.Client
 
 import org.http4s.argonaut._
 import org.http4s.EntityDecoder
-
-import quasar.blobstore.services.StatusService
+import org.slf4s.Logger
 
 object GCSStatusService {
 
   def apply[F[_]: Sync](
+      log: Logger,
       client: Client[F],
-      bucket: Bucket,
-      config: ServiceAccountConfig): StatusService[F] = {
+      bucket: Bucket): StatusService[F] = {
 
     val statusUrl = GoogleCloudStorage.gcsStatusUrl(bucket)
     val req = Request[F](Method.GET, statusUrl)

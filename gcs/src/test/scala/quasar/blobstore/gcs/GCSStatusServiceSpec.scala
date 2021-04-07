@@ -27,6 +27,8 @@ import argonaut._, Argonaut._
 import cats.effect.{IO, Resource}
 import cats.effect.testing.specs2.CatsIO
 
+import org.slf4s.Logger
+import org.slf4s.LoggerFactory
 import org.specs2.mutable.Specification
 import org.specs2.matcher.{MatchResult}
 
@@ -34,6 +36,8 @@ import java.nio.file.{Files, Paths}
 import java.nio.charset.StandardCharsets.UTF_8
 
 class GCSStatusServiceSpec extends Specification with CatsIO {
+
+  private val log: Logger = LoggerFactory("quasar.blobstore.gcs.GCSStatusServiceSpec")
 
   val AUTH_FILE="precog-ci-275718-9de94866bc77.json"
   val BAD_AUTH_FILE="bad-auth-file.json"
@@ -49,7 +53,7 @@ class GCSStatusServiceSpec extends Specification with CatsIO {
   }
 
   def mkService(cfg: ServiceAccountConfig, bucket: Bucket): Resource[IO, StatusService[IO]] =
-    GoogleCloudStorage.mkContainerClient[IO](cfg).map(client => GCSStatusService(client, bucket, cfg))
+    GoogleCloudStorage.mkContainerClient[IO](cfg).map(client => GCSStatusService(log, client, bucket))
 
   def assertStatus(
       service: Resource[IO, StatusService[IO]],
