@@ -27,6 +27,7 @@ import argonaut._, Argonaut._
 import cats.data.Kleisli
 import cats.effect.Sync
 import cats.implicits._
+import cats.kernel.{Eq, Hash}
 
 import org.http4s.{
   EntityDecoder,
@@ -83,6 +84,9 @@ final case class GCSListings(list: List[GCSFile])
 
 object GCSListings {
 
+  implicit val eqGCSFile: Eq[GCSFile] = Eq.by(_.name)
+  implicit val hashGCSFile: Hash[GCSFile] = Hash.by(_.name)
+
   implicit def gcsListingsEntityDecoder[F[_]: Sync]: EntityDecoder[F, GCSListings] = jsonOf[F, GCSListings]
   implicit def gcsListingsEntityEncoder[F[_]: Sync]: EntityEncoder[F, GCSListings] = jsonEncoderOf[F, GCSListings]
 
@@ -96,16 +100,17 @@ object GCSListings {
       }
       },{j => {
         val items = (j --\ "items").either
-        val prefiexes = (j --\ "prefixes").either
-        (items, prefiexes) match {
+        val prefixes = (j --\ "prefixes").either
+        (items, prefixes) match {
           case (Left(_), Left(_)) => DecodeResult.ok(GCSListings(List.empty[GCSFile]))
           case (Left(_), Right(p)) => for {
             list <- p.as[List[String]]
-            gcslist = list.map(s => GCSFile(s))
-          } yield GCSListings(gcslist)
-          case (Right(i), Right(_)) => for {
-            list <- i.as[List[GCSFile]]
-          } yield GCSListings(list)
+          } yield GCSListings(list.map(GCSFile(_)))
+          case (Right(i), Right(p)) => for {
+            is <- i.as[List[GCSFile]]
+            ps <- p.as[List[String]]
+            s = (is ++ ps.map(GCSFile(_))).toSet
+          } yield GCSListings(s.toList)
           case (Right(i), Left(_)) => for {
             list <- i.as[List[GCSFile]]
           } yield GCSListings(list)
