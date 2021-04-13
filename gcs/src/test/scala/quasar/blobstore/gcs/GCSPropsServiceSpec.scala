@@ -17,14 +17,11 @@
 package quasar.blobstore.gcs
 
 import scala._
-import scala.Predef._
 
 import quasar.blobstore.gcs.GCSFileProperties._
 import quasar.blobstore.services.PropsService
 import quasar.blobstore.paths.BlobPath
 import quasar.blobstore.paths.PathElem
-
-import argonaut._, Argonaut._
 
 import cats.effect.{IO, Resource}
 import cats.effect.testing.specs2.CatsIO
@@ -34,28 +31,14 @@ import org.slf4s.LoggerFactory
 import org.specs2.matcher.{Matcher, MatchResult}
 import org.specs2.mutable.Specification
 
-import java.nio.file.{Files, Paths}
-import java.nio.charset.StandardCharsets.UTF_8
-
 object GCSPropsServiceSpec extends Specification with CatsIO {
 
   private val log: Logger = LoggerFactory("quasar.blobstore.gcs.GCSPropsServiceSpec")
 
   val AUTH_FILE="precog-ci-275718-9de94866bc77.json"
   val BAD_AUTH_FILE="bad-auth-file.json"
-
-  def getConfig(authFile: String) = {
-    val authCfgPath = Paths.get(getClass.getClassLoader.getResource(authFile).toURI)
-    val authCfgString = new String(Files.readAllBytes(authCfgPath), UTF_8)
-    val authCfgJson: Json = Parse.parse(authCfgString) match {
-      case Left(value) => Json.obj("malformed" := true)
-      case Right(value) => value
-    }
-    authCfgJson.as[ServiceAccountConfig].toOption.get
-  }
-
-  val goodConfig = getConfig(AUTH_FILE)
-  val badConfig = getConfig(BAD_AUTH_FILE)
+  val goodConfig = common.getAuthFileAsJson(AUTH_FILE)
+  val badConfig = common.getAuthFileAsJson(BAD_AUTH_FILE)
   val bucketName = "precog-test-bucket"
 
   def mkService(cfg: ServiceAccountConfig, bucket: Bucket): Resource[IO, PropsService[IO, GCSFileProperties]] =

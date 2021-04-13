@@ -16,21 +16,23 @@
 
 package quasar.blobstore.gcs
 
-import cats.effect.IO
-import cats.effect.testing.specs2.CatsIO
-import org.specs2.mutable.Specification
+import scala.Predef.String
 
+import argonaut._, Argonaut._
 
-class GCSAccessTokenSpec extends Specification with CatsIO {
+import java.nio.file.{Files, Paths}
+import java.nio.charset.StandardCharsets.UTF_8
 
-  val AUTH_FILE="precog-ci-275718-9de94866bc77.json"
-  val goodConfig = common.getAuthFileAsJson(AUTH_FILE)
+import scala.util.{Left, Right}
 
-
-  "access token service" >> {
-    "get valid token" >> {
-       GCSAccessToken.token[IO](goodConfig.serviceAccountAuthBytes).map(tkn => tkn.getTokenValue.length > 200 )
+object common {
+  def getAuthFileAsJson(authFileName: String) = {
+    val authCfgPath = Paths.get(getClass.getClassLoader.getResource(authFileName).toURI)
+    val authCfgString = new String(Files.readAllBytes(authCfgPath), UTF_8)
+    val authCfgJson: Json = Parse.parse(authCfgString) match {
+      case Left(value) => Json.obj("malformed" := true)
+      case Right(value) => value
     }
+    authCfgJson.as[ServiceAccountConfig].toOption.get
   }
-
 }

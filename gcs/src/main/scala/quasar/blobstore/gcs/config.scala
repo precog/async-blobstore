@@ -20,3 +20,4 @@ import scala.Predef._
 
 final case class Bucket(value: String)
 final case class Url(value: String)
+final case class ContinuationToken(value: String)
