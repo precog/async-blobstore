@@ -17,9 +17,11 @@
 package quasar.blobstore.gcs
 
 import quasar.blobstore.services.ListService
+import quasar.blobstore.paths.{BlobstorePath, PrefixPath}
 
-import scala.{Some, List}
-import scala.Predef.String
+import scala._
+import scala.Predef._
+import scala.collection.immutable.Map
 import scala.util.{Left, Right}
 
 import argonaut._, Argonaut._
@@ -28,6 +30,7 @@ import cats.data.Kleisli
 import cats.effect.Sync
 import cats.implicits._
 import cats.kernel.{Eq, Hash}
+import fs2.Stream
 
 import org.http4s.{
   EntityDecoder,
@@ -47,11 +50,20 @@ object GCSListService {
       client: Client[F],
       bucket: Bucket): ListService[F] = Kleisli { prefixPath =>
 
-    import GCSListings._
+    singleReq(log, client, bucket, None, prefixPath)
+  }
+
+  def singleReq[F[_]: Sync](
+      log: Logger,
+      client: Client[F],
+      bucket: Bucket,
+      pageToken: Option[String],
+      prefixPath: PrefixPath): F[Option[Stream[F, BlobstorePath]]] = {
 
     val listUrl = GoogleCloudStorage.gcsListUrl(bucket)
     val prefix = converters.prefixPathToQueryParamValue(prefixPath)
-    val req = Request[F](Method.GET, listUrl.withQueryParam("prefix", prefix))
+    val queryParams = Map("prefix" -> prefix) ++ pageToken.fold(Map[String, String]())(t => Map("pageToken" -> t))
+    val req = Request[F](Method.GET, listUrl.withQueryParams(queryParams))
 
     for {
       gcsListings <- client.run(req).use { resp =>
@@ -64,7 +76,7 @@ object GCSListService {
 
     } yield {
       gcsListings match {
-        case Left(value) => Some(fs2.Stream.raiseError[F](value))
+        case Left(value) => Some(Stream.raiseError[F](value))
         case Right(value) => Some(converters.gcsListingsToBlobstorePaths(value, _ == converters.gcsFileToBlobstorePath(GCSFile(prefix))))
       }
     }
@@ -79,8 +91,9 @@ object GCSListService {
 
 }
 
+final case class PageToken(value: String)
 final case class GCSFile(name: String)
-final case class GCSListings(list: List[GCSFile])
+final case class GCSListings(list: List[GCSFile], pageToken: Option[PageToken])
 
 object GCSListings {
 
@@ -102,18 +115,18 @@ object GCSListings {
         val items = (j --\ "items").either
         val prefixes = (j --\ "prefixes").either
         (items, prefixes) match {
-          case (Left(_), Left(_)) => DecodeResult.ok(GCSListings(List.empty[GCSFile]))
+          case (Left(_), Left(_)) => DecodeResult.ok(GCSListings(List.empty[GCSFile], None))
           case (Left(_), Right(p)) => for {
             list <- p.as[List[String]]
-          } yield GCSListings(list.map(GCSFile(_)))
+          } yield GCSListings(list.map(GCSFile(_)), None)
           case (Right(i), Right(p)) => for {
             is <- i.as[List[GCSFile]]
             ps <- p.as[List[String]]
             s = (is ++ ps.map(GCSFile(_))).toSet
-          } yield GCSListings(s.toList)
+          } yield GCSListings(s.toList, None)
           case (Right(i), Left(_)) => for {
             list <- i.as[List[GCSFile]]
-          } yield GCSListings(list)
+          } yield GCSListings(list, None)
         }
       }})
 }
