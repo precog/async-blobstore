@@ -36,8 +36,7 @@ import org.http4s.{
   EntityDecoder,
   EntityEncoder,
   Method,
-  Request,
-  Status
+  Request
 }
 import org.http4s.argonaut._
 import org.http4s.client.Client
@@ -53,11 +52,14 @@ object GCSListService {
     val msg = "Unexpected failure when streaming a multi-page response for ListBuckets"
 
     val stream0 = EitherT(singleReq(log, client, bucket, None, prefixPath)).toOption map {results =>
-      Stream.iterateEval(results) {
-        tup => EitherT(singleReq(log, client, bucket, tup._2, prefixPath))
-                 .getOrElseF(Sync[F].raiseError(new Exception(msg)))
+      Stream.iterateEval(results) { tup => tup._2 match {
+        case None => 
+          EitherT(singleReq(log, client, bucket, None, prefixPath)).getOrElseF(Sync[F].raiseError(new Exception(msg)))
+        case Some(value) => {
+          EitherT(singleReq(log, client, bucket, value.some, prefixPath)).getOrElseF(Sync[F].raiseError(new Exception(msg)))
+        }
       }}
-
+    }
     stream0.map(_.takeThrough(_._2.isDefined).flatMap(_._1)).value
   }
 
@@ -69,6 +71,8 @@ object GCSListService {
       prefixPath: PrefixPath)
       : F[Either[GCSAccessError,(Stream[F,BlobstorePath], Option[PageToken])]] = {
 
+    import GCSListings._
+
     val listUrl = GoogleCloudStorage.gcsListUrl(bucket)
     val prefix = converters.prefixPathToQueryParamValue(prefixPath)
     val queryParams = Map("prefix" -> prefix) ++ pageToken.fold(Map[String, String]())(t => Map("pageToken" -> t.value))
@@ -77,21 +81,14 @@ object GCSListService {
     println("req: " + req)
 
     for {
-      gcsListings <- client.run(req).use { resp =>
-        resp.status match {
-          case Status.Ok => {
-            val listingF = resp.as[GCSListings]
-            val fop = listingF.map(g => g.pageToken)
-            (listingF, fop).bisequence.map(_.asRight[GCSAccessError])
-          }
-          case Status.Forbidden =>
-            resp.as[GCSAccessError].map(_.asLeft[(GCSListings, Option[PageToken])])
-          case _ =>
-            resp.as[GCSAccessError].map(_.asLeft[(GCSListings, Option[PageToken])])
+      l <- client.expect[GCSListings](req).map(_.asRight).map(e => e match {
+        case Left(_) => Left(GCSAccessError("error"))
+        case Right(value) => {
+          val t = value.pageToken
+          Right((value, t))
         }
-      }
-
-    } yield gcsListings match {
+      })
+    } yield l match {
       case Right(tup) => { tup._2 match {
         case Some(pt) => 
           Right((
@@ -103,7 +100,6 @@ object GCSListService {
             None: Option[PageToken] ))
       }}
       case Left(e) => Left(e)
-
     }
   }
 
@@ -113,7 +109,6 @@ object GCSListService {
       bucket: Bucket)
       : ListService[F] =
     GCSListService[F](log, client, bucket)
-
 }
 
 final case class PageToken(value: String)
@@ -154,8 +149,20 @@ object GCSListings {
 
           case (Left(_), Right(p), Right(t)) => for {
             list <- p.as[List[String]]
-            pageToken <- t.as[PageToken]
-          } yield GCSListings(list.map(GCSFile(_)), pageToken.some)
+            pageToken <- t.as[String]
+          } yield GCSListings(list.map(GCSFile(_)), PageToken(pageToken).some)
+        
+          case (Right(i), Left(_), Right(t)) => for {
+            list <- i.as[List[GCSFile]]
+            pageToken <- t.as[String]
+          } yield GCSListings(list, PageToken(pageToken).some)
+
+          case (Right(i), Right(p), Right(t)) => for {
+            is <- i.as[List[GCSFile]]
+            ps <- p.as[List[String]]
+            pageToken <- t.as[String]
+            s = (is ++ ps.map(GCSFile(_))).toSet
+          } yield GCSListings(s.toList, PageToken(pageToken).some)
 
           case (Right(i), Right(p), Left(_)) => for {
             is <- i.as[List[GCSFile]]
@@ -163,21 +170,9 @@ object GCSListings {
             s = (is ++ ps.map(GCSFile(_))).toSet
           } yield GCSListings(s.toList, None)
 
-          case (Right(i), Right(p), Right(t)) => for {
-            is <- i.as[List[GCSFile]]
-            ps <- p.as[List[String]]
-            pageToken <- t.as[PageToken]
-            s = (is ++ ps.map(GCSFile(_))).toSet
-          } yield GCSListings(s.toList, pageToken.some)
-
           case (Right(i), Left(_), Left(_)) => for {
             list <- i.as[List[GCSFile]]
           } yield GCSListings(list, None)
-
-          case (Right(i), Left(_), Right(t)) => for {
-            list <- i.as[List[GCSFile]]
-            pageToken <- t.as[PageToken]
-          } yield GCSListings(list, pageToken.some)
         }
       }})
 }
