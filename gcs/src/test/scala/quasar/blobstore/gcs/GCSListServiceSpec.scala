@@ -123,7 +123,7 @@ class GCSListServiceSpec extends Specification with CatsIO {
 
       assertList(
         mkListService(goodConfig, Bucket("precog-test-bucket")),
-        PrefixPath(List(PathElem("does"), PathElem("not"), PathElem("exist"))),
+        PrefixPath(List()),
         be_===(expected))
     }
 
@@ -134,5 +134,16 @@ class GCSListServiceSpec extends Specification with CatsIO {
     //    PrefixPath(List(PathElem("does"), PathElem("not"), PathElem("exist"))),
     //    throwA[GCSAccessError])
     // }
+  }
+
+  "pagination tests" >> {
+    "pagination works" >> {
+      val expected = List[BlobstorePath]()
+      assertList(
+        mkListService(goodConfig, Bucket("precog-pagination-test-bucket")),
+        PrefixPath(List(PathElem("foo"))),
+        be_===(expected))
+      //true must_=== false
+    }
   }
 }

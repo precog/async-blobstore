@@ -26,7 +26,7 @@ import scala.util.{Left, Right}
 
 import argonaut._, Argonaut._
 
-import cats.data.Kleisli
+import cats.data.{EitherT, Kleisli}
 import cats.effect.Sync
 import cats.implicits._
 import cats.kernel.{Eq, Hash}
@@ -50,35 +50,60 @@ object GCSListService {
       client: Client[F],
       bucket: Bucket): ListService[F] = Kleisli { prefixPath =>
 
-    singleReq(log, client, bucket, None, prefixPath)
+    val msg = "Unexpected failure when streaming a multi-page response for ListBuckets"
+
+    val stream0 = EitherT(singleReq(log, client, bucket, None, prefixPath)).toOption map {results =>
+      Stream.iterateEval(results) {
+        tup => EitherT(singleReq(log, client, bucket, tup._2, prefixPath))
+                 .getOrElseF(Sync[F].raiseError(new Exception(msg)))
+      }}
+
+    stream0.map(_.takeThrough(_._2.isDefined).flatMap(_._1)).value
   }
 
   def singleReq[F[_]: Sync](
       log: Logger,
       client: Client[F],
       bucket: Bucket,
-      pageToken: Option[String],
-      prefixPath: PrefixPath): F[Option[Stream[F, BlobstorePath]]] = {
+      pageToken: Option[PageToken],
+      prefixPath: PrefixPath)
+      : F[Either[GCSAccessError,(Stream[F,BlobstorePath], Option[PageToken])]] = {
 
     val listUrl = GoogleCloudStorage.gcsListUrl(bucket)
     val prefix = converters.prefixPathToQueryParamValue(prefixPath)
-    val queryParams = Map("prefix" -> prefix) ++ pageToken.fold(Map[String, String]())(t => Map("pageToken" -> t))
+    val queryParams = Map("prefix" -> prefix) ++ pageToken.fold(Map[String, String]())(t => Map("pageToken" -> t.value))
     val req = Request[F](Method.GET, listUrl.withQueryParams(queryParams))
+
+    println("req: " + req)
 
     for {
       gcsListings <- client.run(req).use { resp =>
         resp.status match {
-          case Status.Ok => resp.as[GCSListings].map(_.asRight[GCSAccessError])
-          case Status.Forbidden => resp.as[GCSAccessError].map(_.asLeft[GCSListings])
-          case _ => resp.as[GCSAccessError].map(_.asLeft[GCSListings])
+          case Status.Ok => {
+            val listingF = resp.as[GCSListings]
+            val fop = listingF.map(g => g.pageToken)
+            (listingF, fop).bisequence.map(_.asRight[GCSAccessError])
+          }
+          case Status.Forbidden =>
+            resp.as[GCSAccessError].map(_.asLeft[(GCSListings, Option[PageToken])])
+          case _ =>
+            resp.as[GCSAccessError].map(_.asLeft[(GCSListings, Option[PageToken])])
         }
       }
 
-    } yield {
-      gcsListings match {
-        case Left(value) => Some(Stream.raiseError[F](value))
-        case Right(value) => Some(converters.gcsListingsToBlobstorePaths(value, _ == converters.gcsFileToBlobstorePath(GCSFile(prefix))))
-      }
+    } yield gcsListings match {
+      case Right(tup) => { tup._2 match {
+        case Some(pt) => 
+          Right((
+          (converters.gcsListingsToBlobstorePaths(tup._1, _ == converters.gcsFileToBlobstorePath(GCSFile(prefix)))),
+          pt.some))
+        case None => 
+          Right((
+            (converters.gcsListingsToBlobstorePaths(tup._1, _ == converters.gcsFileToBlobstorePath(GCSFile(prefix)))),
+            None: Option[PageToken] ))
+      }}
+      case Left(e) => Left(e)
+
     }
   }
 
@@ -103,6 +128,9 @@ object GCSListings {
   implicit def gcsListingsEntityDecoder[F[_]: Sync]: EntityDecoder[F, GCSListings] = jsonOf[F, GCSListings]
   implicit def gcsListingsEntityEncoder[F[_]: Sync]: EntityEncoder[F, GCSListings] = jsonEncoderOf[F, GCSListings]
 
+  implicit val codecPageToken: CodecJson[PageToken] =
+    casecodec1(PageToken.apply, PageToken.unapply)("value")
+
   implicit val codecGCSFile: CodecJson[GCSFile] =
     casecodec1(GCSFile.apply, GCSFile.unapply)("name")
 
@@ -114,19 +142,42 @@ object GCSListings {
       },{j => {
         val items = (j --\ "items").either
         val prefixes = (j --\ "prefixes").either
-        (items, prefixes) match {
-          case (Left(_), Left(_)) => DecodeResult.ok(GCSListings(List.empty[GCSFile], None))
-          case (Left(_), Right(p)) => for {
+        val token = (j --\ "nextPageToken").either
+
+        //TODO: there's probably a better way to do this
+        (items, prefixes, token) match {
+          case (Left(_), Left(_), _) => DecodeResult.ok(GCSListings(List.empty[GCSFile], None))
+
+          case (Left(_), Right(p), Left(_)) => for {
             list <- p.as[List[String]]
           } yield GCSListings(list.map(GCSFile(_)), None)
-          case (Right(i), Right(p)) => for {
+
+          case (Left(_), Right(p), Right(t)) => for {
+            list <- p.as[List[String]]
+            pageToken <- t.as[PageToken]
+          } yield GCSListings(list.map(GCSFile(_)), pageToken.some)
+
+          case (Right(i), Right(p), Left(_)) => for {
             is <- i.as[List[GCSFile]]
             ps <- p.as[List[String]]
             s = (is ++ ps.map(GCSFile(_))).toSet
           } yield GCSListings(s.toList, None)
-          case (Right(i), Left(_)) => for {
+
+          case (Right(i), Right(p), Right(t)) => for {
+            is <- i.as[List[GCSFile]]
+            ps <- p.as[List[String]]
+            pageToken <- t.as[PageToken]
+            s = (is ++ ps.map(GCSFile(_))).toSet
+          } yield GCSListings(s.toList, pageToken.some)
+
+          case (Right(i), Left(_), Left(_)) => for {
             list <- i.as[List[GCSFile]]
           } yield GCSListings(list, None)
+
+          case (Right(i), Left(_), Right(t)) => for {
+            list <- i.as[List[GCSFile]]
+            pageToken <- t.as[PageToken]
+          } yield GCSListings(list, pageToken.some)
         }
       }})
 }
