@@ -78,8 +78,6 @@ object GCSListService {
     val queryParams = Map("prefix" -> prefix) ++ pageToken.fold(Map[String, String]())(t => Map("pageToken" -> t.value))
     val req = Request[F](Method.GET, listUrl.withQueryParams(queryParams))
 
-    println("req: " + req)
-
     for {
       l <- client.expect[GCSListings](req).map(_.asRight).map(e => e match {
         case Left(_) => Left(GCSAccessError("error"))

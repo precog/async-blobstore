@@ -134,7 +134,7 @@ class GCSListServiceSpec extends Specification with CatsIO {
 
       assertList(
         mkListService(goodConfig, Bucket("precog-test-bucket")),
-        PrefixPath(List()),
+        PrefixPath(List(PathElem("bogus-prefix"))),
         be_===(expected))
     }
 
