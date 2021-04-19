@@ -68,7 +68,7 @@ class GCSListServiceSpec extends Specification with CatsIO {
       }
     }
 
-  def paginatioAssertListLength (
+  def paginationAssertListLength (
       service: Resource[IO, ListService[IO]],
       prefixPath: PrefixPath,
       matcher: Matcher[Int]): IO[MatchResult[Int]] =
@@ -150,7 +150,7 @@ class GCSListServiceSpec extends Specification with CatsIO {
   "pagination tests" >> {
     "pagination works" >> {
       val expected = 5000
-      paginatioAssertListLength(
+      paginationAssertListLength(
         mkListService(goodConfig, Bucket("precog-pagination-test-bucket")),
         PrefixPath(List(PathElem("foo"))),
         be_===(expected))
