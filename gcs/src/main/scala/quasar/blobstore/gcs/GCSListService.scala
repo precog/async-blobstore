@@ -52,15 +52,12 @@ object GCSListService {
 
     val msg = "Unexpected failure when streaming a multi-page response for ListBuckets"
 
-    val stream0 = (singleReq(log, client, bucket, None, prefixPath)).toOption map {results =>
-      Stream.iterateEval(results) { tup => tup._2 match {
-        case None => 
-          (singleReq(log, client, bucket, None, prefixPath)).getOrElseF(Sync[F].raiseError(new Exception(msg)))
-        case Some(value) => {
-          (singleReq(log, client, bucket, value.some, prefixPath)).getOrElseF(Sync[F].raiseError(new Exception(msg)))
-        }
-      }}
+    val stream0 = singleReq(log, client, bucket, None, prefixPath).toOption map { results =>
+      Stream.iterateEval(results) { case (_, next) =>
+          singleReq(log, client, bucket, next, prefixPath).getOrElseF(Sync[F].raiseError(new Exception(msg)))
+      }
     }
+
     stream0.map(_.takeThrough(_._2.isDefined).flatMap(_._1)).value
   }
 
