@@ -68,6 +68,17 @@ class GCSListServiceSpec extends Specification with CatsIO {
       }
     }
 
+  def paginationAssertListLength (
+      service: Resource[IO, ListService[IO]],
+      prefixPath: PrefixPath,
+      matcher: Matcher[Int]): IO[MatchResult[Int]] =
+    service use { svc =>
+      svc(prefixPath).flatMap {
+        case Some(value) => value.compile.toList.map(x => x.length must matcher)
+        case None => ko("Unexpected None").asInstanceOf
+      }
+    }
+
   "list service" >> {
 
     "root returns prefixpaths and blobpaths" >> {
@@ -123,7 +134,7 @@ class GCSListServiceSpec extends Specification with CatsIO {
 
       assertList(
         mkListService(goodConfig, Bucket("precog-test-bucket")),
-        PrefixPath(List(PathElem("does"), PathElem("not"), PathElem("exist"))),
+        PrefixPath(List(PathElem("bogus-prefix"))),
         be_===(expected))
     }
 
@@ -134,5 +145,15 @@ class GCSListServiceSpec extends Specification with CatsIO {
     //    PrefixPath(List(PathElem("does"), PathElem("not"), PathElem("exist"))),
     //    throwA[GCSAccessError])
     // }
+  }
+
+  "pagination tests" >> {
+    "pagination works" >> {
+      val expected = 5000
+      paginationAssertListLength(
+        mkListService(goodConfig, Bucket("precog-pagination-test-bucket")),
+        PrefixPath(List(PathElem("foo"))),
+        be_===(expected))
+    }
   }
 }
