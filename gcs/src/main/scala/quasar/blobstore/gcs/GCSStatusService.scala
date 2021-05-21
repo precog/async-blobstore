@@ -17,9 +17,6 @@
 package quasar.blobstore.gcs
 
 import scala._
-//import scala.Predef._
-
-//import argonaut._, Argonaut._
 
 import quasar.blobstore.BlobstoreStatus
 import quasar.blobstore.services.StatusService
@@ -34,8 +31,6 @@ import org.http4s.{
 }
 import org.http4s.client.Client
 
-//import org.http4s.argonaut._
-//import org.http4s.EntityDecoder
 import org.slf4s.Logger
 
 object GCSStatusService {
