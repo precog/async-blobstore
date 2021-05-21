@@ -37,7 +37,7 @@ object GoogleCloudStorage extends Logging {
 
   def gcsStatusUrl(bucket: Bucket): Uri =
     bucketUrl(bucket)
-      .addSegment("iam")
+      .addSegment("o")
 
   def gcsDownloadUrl(bucket: Bucket, objectName: String): Uri =
     bucketUrl(bucket)

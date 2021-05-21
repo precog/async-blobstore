@@ -17,9 +17,9 @@
 package quasar.blobstore.gcs
 
 import scala._
-import scala.Predef._
+//import scala.Predef._
 
-import argonaut._, Argonaut._
+//import argonaut._, Argonaut._
 
 import quasar.blobstore.BlobstoreStatus
 import quasar.blobstore.services.StatusService
@@ -28,15 +28,14 @@ import cats.effect.Sync
 import cats.implicits._
 
 import org.http4s.{
-  EntityEncoder,
   Method,
   Request,
   Status
 }
 import org.http4s.client.Client
 
-import org.http4s.argonaut._
-import org.http4s.EntityDecoder
+//import org.http4s.argonaut._
+//import org.http4s.EntityDecoder
 import org.slf4s.Logger
 
 object GCSStatusService {
@@ -61,43 +60,4 @@ object GCSStatusService {
 
     handlers.recoverToBlobstoreStatus(res)
   }
-}
-
-final case class StatusResponse(kind: String, resourceId: String, version: Int, etag: String)
-final case class StatusResponseError(code: Int, message: String)
-
-object StatusResponse {
-  implicit def statusResponseEntityDecoder[F[_]: Sync] : EntityDecoder[F, StatusResponse] = jsonOf[F, StatusResponse]
-  implicit def statusResponseEntityEncoder[F[_]: Sync]: EntityEncoder[F, StatusResponse] = jsonEncoderOf[F, StatusResponse]
-  implicit val loginCodecJson: CodecJson[StatusResponse] = CodecJson(
-    {sr => Json.obj(
-      "kind" := sr.kind,
-      "resourceId" := sr.resourceId,
-      "version" := sr.version,
-      "etag" := sr.etag)
-    }, {j => {
-      for {
-        kind <- (j --\ "kind").as[String]
-        resourceId <- (j --\ "resourceId").as[String]
-        version <- (j --\ "version").as[Int]
-        etag <- (j --\ "etag").as[String]
-      } yield StatusResponse(kind, resourceId, version, etag)
-    }})
-}
-
-object StatusResponseError {
-  implicit def statusResponseErrorEntityDecoder[F[_]: Sync] : EntityDecoder[F, StatusResponseError] = jsonOf[F, StatusResponseError]
-  implicit def statusResponseErrorEntityEncoder[F[_]: Sync]: EntityEncoder[F, StatusResponseError] = jsonEncoderOf[F, StatusResponseError]
-  implicit val statusResonseError: CodecJson[StatusResponseError] = CodecJson(
-    {sre => Json.obj(
-      "code" := sre.code,
-      "message" := sre.message)
-    }, {j => {
-      for {
-        code <- (j --\ "code").as[Int]
-        message <- (j --\ "message").as[String]
-      } yield StatusResponseError(code, message)
-    }}
-
-  )
 }
