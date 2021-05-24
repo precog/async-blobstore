@@ -66,7 +66,7 @@ class GCSStatusServiceSpec extends Specification with CatsIO {
       : IO[MatchResult[BlobstoreStatus]] =
     service use { svc =>
       svc.map(_ must beLike {
-        case BlobstoreStatus.notOk(_) => ok
+        case BlobstoreStatus.notFound(_) => ok
       })
     }
 
