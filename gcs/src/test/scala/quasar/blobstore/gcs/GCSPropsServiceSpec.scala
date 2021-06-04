@@ -71,17 +71,24 @@ object GCSPropsServiceSpec extends Specification with CatsIO {
     }
 
   "props service" >> {
-    "existing file returns correct props" >> {
+    "existing file in root returns some" >> {
       assertProps[GCSFileProperties](
         mkService(goodConfig, Bucket(bucketName)),
         BlobPath(List(PathElem("extraSmallZips.data"))),
         beSome)
     }
 
-    "existing blobpath returns some (2)" >> {
+    "existing nested file returns some" >> {
       assertProps[GCSFileProperties](
         mkService(goodConfig, Bucket(bucketName)),
         BlobPath(List(PathElem("prefix3"), PathElem("subprefix5"), PathElem("cars2.data"))),
+        beSome)
+    }
+
+    "existing large file returns some" >> {
+      assertProps[GCSFileProperties](
+        mkService(goodConfig, Bucket("precog-examples")),
+        BlobPath(List(PathElem("jsonData4GB.json"))),
         beSome)
     }
 

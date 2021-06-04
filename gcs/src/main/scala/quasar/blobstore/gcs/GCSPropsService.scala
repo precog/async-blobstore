@@ -18,7 +18,7 @@ package quasar.blobstore.gcs
 
 import quasar.blobstore.services.PropsService
 
-import scala.{Int, Some}
+import scala.{Long, Some}
 import scala.Predef.String
 
 import argonaut._, Argonaut._
@@ -57,7 +57,7 @@ object GCSPropsService {
         }
       }
 
-    handlers.recoverToNone(resp)
+    handlers.recoverToNone(log, resp)
   }
 
   def mk[F[_]: Sync](
@@ -70,7 +70,7 @@ object GCSPropsService {
 }
 
 object GCSFileProperties {
-  final case class GCSFileProperties(name: String, bucket: String, size: Int, created: String)
+  final case class GCSFileProperties(name: String, bucket: String, size: Long, created: String)
 
   implicit def gcsAccessErrorEntityDecoder[F[_]: Sync]: EntityDecoder[F, GCSFileProperties] = jsonOf[F, GCSFileProperties]
   implicit def gcsAccessErrorEntityEncoder[F[_]: Sync]: EntityEncoder[F, GCSFileProperties] = jsonEncoderOf[F, GCSFileProperties]
