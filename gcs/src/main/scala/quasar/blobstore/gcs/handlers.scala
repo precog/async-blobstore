@@ -19,17 +19,20 @@ package quasar.blobstore.gcs
 import quasar.blobstore.BlobstoreStatus
 
 import java.lang.Throwable
-import scala.{None, Option}
+import scala.Option
 import scala.util.control.NonFatal
 
 import cats.ApplicativeError
+import cats.effect.Sync
 import cats.implicits._
+import org.slf4s.Logger
 
 object handlers {
 
-  def recoverToNone[F[_], A](fa: F[Option[A]])(implicit F: ApplicativeError[F, Throwable]): F[Option[A]] =
-    fa.recover {
-      case NonFatal(_) => None
+  def recoverToNone[F[_]: Sync, A](log: Logger, fa: F[Option[A]]): F[Option[A]] =
+    fa.recoverWith {
+      case NonFatal(ex) =>
+        Sync[F].delay(log.debug("Recovered exception", ex)) *> none[A].pure[F]
     }
 
   def recoverToBlobstoreStatus[F[_]: ApplicativeError[?[_], Throwable]](fa: F[BlobstoreStatus]): F[BlobstoreStatus] =
