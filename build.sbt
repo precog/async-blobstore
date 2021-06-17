@@ -24,10 +24,10 @@ ThisBuild / githubWorkflowBuildPreamble +=
     name = Some("Decrypt bad gcp service account json key"))
 
 val AwsSdkVersion = "2.15.34"
-val Fs2Version = "2.4.5"
-val MonixVersion = "3.3.0"
+val Fs2Version = "2.5.6"
+val MonixVersion = "3.4.0"
 val SpecsVersion = "4.10.5"
-val Http4sVersion = "0.21.13"
+val Http4sVersion = "0.21.24"
 val GoogleAuthLib = "0.25.0"
 val ArgonautVersion = "6.3.2"
 val Slf4sVersion = "1.7.26"

@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 object AsyncHttpClientBuilder extends Logging {
   def apply[F[_]: ConcurrentEffect]: Resource[F, Client[F]] =
-    Resource.liftF(Search[F]).flatMap(selector =>
+    Resource.eval(Search[F]).flatMap(selector =>
       AsyncHttpClient.resource[F](mkConfig(selector)))
 
   def mkConfig[F[_]](proxySelector: ProxySelector): AsyncHttpClientConfig =
