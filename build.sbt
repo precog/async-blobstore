@@ -79,6 +79,9 @@ lazy val gcs = project
   .in(file("gcs"))
   .dependsOn(core)
   .settings(
+    addCompilerPlugin("com.github.ghik" % "silencer-plugin" % "1.7.0" cross CrossVersion.full),
+    scalacOptions += "-P:silencer:globalFilters=http4s-argonaut") // remove after bumping from http4s 0.21.24
+  .settings(
     name := "async-blobstore-gcs",
     libraryDependencies ++= Seq(
       "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthLib,
