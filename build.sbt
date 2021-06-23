@@ -24,10 +24,10 @@ ThisBuild / githubWorkflowBuildPreamble +=
     name = Some("Decrypt bad gcp service account json key"))
 
 val AwsSdkVersion = "2.15.34"
-val Fs2Version = "2.4.5"
-val MonixVersion = "3.3.0"
-val SpecsVersion = "4.10.5"
-val Http4sVersion = "0.21.13"
+val Fs2Version = "2.5.6"
+val MonixVersion = "3.4.0"
+val SpecsVersion = "4.10.6"
+val Http4sVersion = "0.21.24"
 val GoogleAuthLib = "0.25.0"
 val ArgonautVersion = "6.3.2"
 val Slf4sVersion = "1.7.26"
@@ -78,6 +78,9 @@ lazy val azure = project
 lazy val gcs = project
   .in(file("gcs"))
   .dependsOn(core)
+  .settings(
+    addCompilerPlugin("com.github.ghik" % "silencer-plugin" % "1.7.0" cross CrossVersion.full),
+    scalacOptions += "-P:silencer:globalFilters=http4s-argonaut") // remove after bumping from http4s 0.21.24
   .settings(
     name := "async-blobstore-gcs",
     libraryDependencies ++= Seq(

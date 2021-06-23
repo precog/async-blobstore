@@ -45,7 +45,7 @@ object GCSGetService {
     val req = Request[F](Method.GET, downloadUrl)
 
     for {
-      props <- Resource.liftF(GCSPropsService[F](log, client, bucket).apply(blobPath))
+      props <- Resource.eval(GCSPropsService[F](log, client, bucket).apply(blobPath))
       res <-
         props match {
           case None =>
