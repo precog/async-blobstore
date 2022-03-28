@@ -87,14 +87,14 @@ class GCSGetServiceSpec extends Specification with CatsIO {
             mkGetService(goodConfig, Bucket("precog-test-bucket")),
             BlobPath(List(PathElem("testdata"), PathElem("lines.json"))),
             be_===(expected))
-        }
+      }.pendingUntilFixed
 
       "non-existing blobpath returns none" >> {
 
         assertGetNone(
           mkGetService(goodConfig, Bucket("precog-test-bucket")),
           BlobPath(List(PathElem("testdata"), PathElem("notthere"))))
-        }
+      }.pendingUntilFixed
 
     }
 
