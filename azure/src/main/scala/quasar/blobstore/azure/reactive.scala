@@ -20,18 +20,14 @@ import cats.effect._
 import fs2.Stream
 import fs2.interop.reactivestreams._
 import reactor.core.publisher.{Flux, Mono}
-import reactor.core.scala.publisher.ScalaConverters._
 
 object reactive {
 
   def streamToFlux[F[_]: ConcurrentEffect, A](s: Stream[F, A]): Flux[A] =
     Flux.from(s.toUnicastPublisher)
 
-  def monoToAsync[F[_]: ContextShift, A](
-      mono: Mono[A])(
-      implicit F: Async[F])
-      : F[A] =
-    Async.fromFuture(F.delay(mono.asScala.toFuture))
+  def monoToAsync[F[_]: ConcurrentEffect, A](mono: Mono[A]): F[A] =
+    fromPublisher[F, A](mono).compile.lastOrError
 
   def fluxToStream[F[_]: ConcurrentEffect: ContextShift, A](
       flux: Flux[A])

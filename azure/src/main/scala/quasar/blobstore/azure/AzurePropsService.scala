@@ -20,7 +20,7 @@ import quasar.blobstore.azure.requests.BlobPropsArgs
 import quasar.blobstore.services.PropsService
 
 import cats.data.Kleisli
-import cats.effect.{Async, ContextShift}
+import cats.effect.{ConcurrentEffect, ContextShift}
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import com.azure.storage.blob.{BlobAsyncClient, BlobContainerAsyncClient}
@@ -30,12 +30,12 @@ import scala.Option
 
 object AzurePropsService {
 
-  def fromBlobPropsArgs[F[_]: Async: ContextShift]
+  def fromBlobPropsArgs[F[_]: ConcurrentEffect: ContextShift]
       : Kleisli[F, BlobPropsArgs, Option[BlobProperties]] =
     handlers.recoverToNone(
       requests.blobPropsRequestK.map(_.getValue()))
 
-  def apply[F[_]: Async: ContextShift](
+  def apply[F[_]: ConcurrentEffect: ContextShift](
       containerClient: BlobContainerAsyncClient,
       mkArgs: BlobAsyncClient => BlobPropsArgs)
       : PropsService[F, BlobProperties] =
@@ -46,7 +46,7 @@ object AzurePropsService {
       } yield res
     }
 
-  def mk[F[_]: Async: ContextShift](containerClient: BlobContainerAsyncClient)
+  def mk[F[_]: ConcurrentEffect: ContextShift](containerClient: BlobContainerAsyncClient)
       : PropsService[F, BlobProperties] =
     AzurePropsService[F](
       containerClient,

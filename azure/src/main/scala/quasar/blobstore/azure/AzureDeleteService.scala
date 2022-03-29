@@ -21,13 +21,13 @@ import quasar.blobstore.paths.BlobPath
 import quasar.blobstore.services.DeleteService
 
 import cats.data.Kleisli
-import cats.effect.{Async, ContextShift}
+import cats.effect.{ConcurrentEffect, ContextShift}
 import cats.syntax.functor._
 import com.azure.storage.blob.BlobContainerAsyncClient
 
 object AzureDeleteService {
 
-  def mk[F[_]: Async: ContextShift](containerClient: BlobContainerAsyncClient)
+  def mk[F[_]: ConcurrentEffect: ContextShift](containerClient: BlobContainerAsyncClient)
       : DeleteService[F] = {
 
     val res = for {
