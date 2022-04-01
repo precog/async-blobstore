@@ -21,7 +21,7 @@ import scala.{Boolean, Byte}
 import scala.Predef._
 
 import cats.data.Kleisli
-import cats.effect.{Async, ConcurrentEffect, ContextShift, Sync}
+import cats.effect.{ConcurrentEffect, ContextShift, Sync}
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import com.azure.core.http.rest.Response
@@ -54,13 +54,13 @@ object requests {
     blobClient: BlobAsyncClient,
     blobRequestConditions: BlobRequestConditions)
 
-  def blobPropsRequest[F[_]: Async: ContextShift](
+  def blobPropsRequest[F[_]: ConcurrentEffect: ContextShift](
       args: BlobPropsArgs)
       : F[Response[BlobProperties]] =
     Sync[F].delay(args.blobClient.getPropertiesWithResponse(args.blobRequestConditions)) >>=
       reactive.monoToAsync[F, Response[BlobProperties]]
 
-  def blobPropsRequestK[F[_]: Async: ContextShift]
+  def blobPropsRequestK[F[_]: ConcurrentEffect: ContextShift]
       : Kleisli[F, BlobPropsArgs, Response[BlobProperties]] =
     Kleisli(blobPropsRequest[F])
 
@@ -80,12 +80,12 @@ object requests {
     containerClient: BlobContainerAsyncClient,
     leaseId: String)
 
-  def containerPropsRequest[F[_]: Async: ContextShift](
+  def containerPropsRequest[F[_]: ConcurrentEffect: ContextShift](
       args: ContainerPropsArgs): F[Response[BlobContainerProperties]] =
     Sync[F].delay(args.containerClient.getPropertiesWithResponse(args.leaseId)) >>=
       reactive.monoToAsync[F, Response[BlobContainerProperties]]
 
-  def containerPropsRequestK[F[_]: Async: ContextShift]
+  def containerPropsRequestK[F[_]: ConcurrentEffect: ContextShift]
       : Kleisli[F, ContainerPropsArgs, Response[BlobContainerProperties]] =
     Kleisli(containerPropsRequest[F])
 
@@ -95,13 +95,13 @@ object requests {
     parallelTransferOptions: ParallelTransferOptions,
     overwrite: Boolean)
 
-  def uploadRequest[F[_]: Async: ContextShift](args: UploadRequestArgs)
+  def uploadRequest[F[_]: ConcurrentEffect: ContextShift](args: UploadRequestArgs)
       : F[BlockBlobItem] =
     Sync[F].delay(
       args.blobClient.upload(args.bytes, args.parallelTransferOptions, args.overwrite)
     ) >>= reactive.monoToAsync[F, BlockBlobItem]
 
-  def uploadRequestK[F[_]: Async: ContextShift]
+  def uploadRequestK[F[_]: ConcurrentEffect: ContextShift]
       : Kleisli[F, UploadRequestArgs, BlockBlobItem] =
     Kleisli(uploadRequest[F])
 }

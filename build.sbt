@@ -23,7 +23,7 @@ ThisBuild / githubWorkflowBuildPreamble +=
     List("decryptSecret gcs/src/test/resources/bad-auth-file.json.enc"),
     name = Some("Decrypt bad gcp service account json key"))
 
-val AwsSdkVersion = "2.15.34"
+val AwsSdkVersion = "2.16.21"
 val Fs2Version = "2.5.6"
 val MonixVersion = "3.4.0"
 val SpecsVersion = "4.10.6"
@@ -72,7 +72,6 @@ lazy val azure = project
     libraryDependencies ++= Seq(
       "com.azure" % "azure-storage-blob" % "12.9.0",
       "com.azure" % "azure-identity" % "1.2.0",
-      "io.projectreactor" %% "reactor-scala-extensions" % "0.6.0",
       "com.codecommit" %% "cats-effect-testing-specs2" % "0.4.1" % Test))
 
 lazy val gcs = project
@@ -89,6 +88,5 @@ lazy val gcs = project
       "io.argonaut" %% "argonaut" % ArgonautVersion,
       "org.apache.logging.log4j" % "log4j-core" % Log4jVersion % Test,
       "org.apache.logging.log4j" % "log4j-slf4j-impl" % Log4jVersion % Test,
-      "org.http4s" %% "http4s-async-http-client" % Http4sVersion,
-      "org.http4s" %% "http4s-argonaut" % Http4sVersion,
-      "com.github.markusbernhardt"  % "proxy-vole" % "1.0.5"))
+      "org.http4s" %% "http4s-ember-client" % Http4sVersion,
+      "org.http4s" %% "http4s-argonaut" % Http4sVersion))

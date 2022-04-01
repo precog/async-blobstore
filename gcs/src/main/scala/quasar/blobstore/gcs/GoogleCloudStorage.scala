@@ -24,11 +24,11 @@ import com.google.auth.oauth2.AccessToken
 import org.http4s.Uri
 import org.http4s.client.Client
 import org.slf4s.Logging
-import cats.effect.ConcurrentEffect
+import cats.effect.{ConcurrentEffect, ContextShift, Timer}
 
 object GoogleCloudStorage extends Logging {
 
-  def mkContainerClient[F[_]: ConcurrentEffect](cfg: ServiceAccountConfig): Resource[F, Client[F]] =
+  def mkContainerClient[F[_]: ConcurrentEffect: ContextShift: Timer](cfg: ServiceAccountConfig): Resource[F, Client[F]] =
     GCSClient(cfg)
 
   private def bucketUrl(bucket: Bucket) =

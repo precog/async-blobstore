@@ -26,7 +26,7 @@ import scala.concurrent.duration.MILLISECONDS
 
 import cats._
 import cats.implicits._
-import cats.effect.{Async, ConcurrentEffect, ContextShift, Sync, Timer}
+import cats.effect.{ConcurrentEffect, ContextShift, Sync, Timer}
 import cats.effect.concurrent.Ref
 import com.azure.core.credential.{AccessToken, TokenCredential, TokenRequestContext}
 import com.azure.identity.ClientSecretCredentialBuilder
@@ -40,7 +40,7 @@ object Azure extends Logging {
   def mkStdStorageUrl(name: AccountName): StorageUrl =
     StorageUrl(s"https://${name.value}.blob.core.windows.net/")
 
-  def getAccessToken[F[_]: Async: ContextShift](ad: ActiveDirectory): F[Expires[AccessToken]] = {
+  def getAccessToken[F[_]: ConcurrentEffect: ContextShift](ad: ActiveDirectory): F[Expires[AccessToken]] = {
     val mkBuilder =
       Sync[F].delay {
         (new ClientSecretCredentialBuilder)

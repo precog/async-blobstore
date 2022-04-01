@@ -19,7 +19,7 @@ package quasar.blobstore.gcs
 import scala._
 import scala.Predef._
 
-import cats.effect.{Concurrent, ConcurrentEffect, Resource, Sync}
+import cats.effect.{Concurrent, ConcurrentEffect, ContextShift, Resource, Sync, Timer}
 import cats.implicits._
 import org.http4s.client.Client
 import org.http4s.client.middleware.{RequestLogger, ResponseLogger}
@@ -60,9 +60,9 @@ object GCSClient {
     Client(signAndSubmit)
   }
 
-  def apply[F[_]: ConcurrentEffect](cfg: ServiceAccountConfig)
+  def apply[F[_]: ConcurrentEffect: ContextShift: Timer](cfg: ServiceAccountConfig)
       : Resource[F, Client[F]] =
-    AsyncHttpClientBuilder[F]
+    EmberHttpClientBuilder[F]
       .map[F, Client[F]](sign(cfg))
       .map[F, Client[F]](http4sLogger)
 }

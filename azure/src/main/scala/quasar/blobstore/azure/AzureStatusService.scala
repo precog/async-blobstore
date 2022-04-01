@@ -19,17 +19,17 @@ package quasar.blobstore.azure
 import quasar.blobstore.azure.requests.ContainerPropsArgs
 import quasar.blobstore.services.StatusService
 
-import cats.effect.{Async, ContextShift}
+import cats.effect.{ConcurrentEffect, ContextShift}
 import com.azure.storage.blob.BlobContainerAsyncClient
 import com.azure.storage.blob.models.BlobContainerProperties
 
 object AzureStatusService {
-  def apply[F[_]: Async: ContextShift](args: ContainerPropsArgs): StatusService[F] =
+  def apply[F[_]: ConcurrentEffect: ContextShift](args: ContainerPropsArgs): StatusService[F] =
     (requests.containerPropsRequestK[F] andThen
       converters.responseToBlobstoreStatusK[F, BlobContainerProperties] mapF
       handlers.recoverToBlobstoreStatus[F]
     ).apply(args)
 
-  def mk[F[_]: Async: ContextShift](containerClient: BlobContainerAsyncClient): StatusService[F] =
+  def mk[F[_]: ConcurrentEffect: ContextShift](containerClient: BlobContainerAsyncClient): StatusService[F] =
     AzureStatusService[F](ContainerPropsArgs(containerClient, null))
 }
