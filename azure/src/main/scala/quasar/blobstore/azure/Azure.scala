@@ -19,6 +19,7 @@ package quasar.blobstore.azure
 import quasar.blobstore.azure.AzureCredentials.ActiveDirectory
 import quasar.blobstore.CompatConverters.All._
 
+import java.time.Duration
 import java.time.Instant
 import scala._
 import scala.Predef._
@@ -29,6 +30,7 @@ import cats.implicits._
 import cats.effect.{Async, ConcurrentEffect, ContextShift, Sync, Timer}
 import cats.effect.concurrent.Ref
 import com.azure.core.credential.{AccessToken, TokenCredential, TokenRequestContext}
+import com.azure.core.http.netty.NettyAsyncHttpClientBuilder
 import com.azure.identity.ClientSecretCredentialBuilder
 import com.azure.storage.blob._
 import com.azure.storage.common.StorageSharedKeyCredential
@@ -82,6 +84,7 @@ object Azure extends Logging {
         new BlobContainerClientBuilder()
           .endpoint(cfg.storageUrl.value)
           .containerName(cfg.containerName.value)
+          .httpClient(new NettyAsyncHttpClientBuilder().readTimeout(Duration.ZERO).responseTimeout(Duration.ZERO).writeTimeout(Duration.ZERO).build())
           //TODO
           // .httpLogOptions(new HttpLogOptions().setLogLevel(HttpLogDetailLevel.BODY_AND_HEADERS))
       }
@@ -102,6 +105,7 @@ object Azure extends Logging {
   def refContainerClient[F[_]: ConcurrentEffect: ContextShift: Timer](cfg: Config)
       : F[(Ref[F, Expires[BlobContainerAsyncClient]], F[Unit])] =
     for {
+      _ <- debug("Creating client using Netty without timeout")
       containerClient <- mkContainerClient(cfg)
       ref <- Ref.of[F, Expires[BlobContainerAsyncClient]](containerClient)
       refresh = for {
