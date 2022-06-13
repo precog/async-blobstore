@@ -36,8 +36,8 @@ object AzurePutService {
   def apply[F[_]: ContextShift: ConcurrentEffect](
       containerClient: BlobContainerAsyncClient,
       mkArgs: (Flux[ByteBuffer], BlobAsyncClient) => UploadRequestArgs)
-      : PutService[F] = {
-    val res = for {
+      : PutService[F] =
+    for {
       (blobPath, st) <- Kleisli.ask[F, (BlobPath, Stream[F, Byte])]
       blobClient <- Kleisli.liftF(converters.mkBlobClient(containerClient)(blobPath))
       flux = reactive.streamToFlux[F, ByteBuffer](st.chunks.map(_.toByteBuffer))
@@ -45,8 +45,6 @@ object AzurePutService {
       statusCode <- Kleisli.liftF(requests.uploadRequest[F](args).map(_ => 200))
     } yield statusCode
 
-    handlers.recoverToStatusCode(res)
-  }
 
   def mk[F[_]: ConcurrentEffect: ContextShift](containerClient: BlobContainerAsyncClient)
       : PutService[F] =
